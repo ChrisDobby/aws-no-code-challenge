@@ -46,6 +46,7 @@ const definition = (role: IRole, addDaysStateMachine: sfn.IStateMachine, emailQu
               FlexibleTimeWindow: {
                 Mode: "OFF",
               },
+              ActionAfterCompletion: "DELETE",
               "Name.$": "States.Format('{}{}{}', $.schedule.accountId, $.schedule.template, $.schedule.days)",
               "ScheduleExpression.$": "States.Format('at({})', $.schedule.create.at.dateTime)",
               Target: {

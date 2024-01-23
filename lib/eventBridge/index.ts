@@ -48,7 +48,7 @@ export const create = ({
     completedEmailRule: new eventBridge.Rule(scope, "send-completed-email-rule", {
       ruleName: `${namespace}-send-completed-email`,
       eventBus: trialsBus,
-      eventPattern: { detailType: ["trial-completed"] },
+      eventPattern: { detailType: ["trial-complete"] },
     }).addTarget(
       new targets.SqsQueue(emailQueue, {
         message: eventBridge.RuleTargetInput.fromObject({
@@ -118,7 +118,7 @@ export const create = ({
       target: emailSenderStateMachine.stateMachineArn,
       enrichment: emailEnricherStateMachine.stateMachineArn,
       enrichmentParameters: {
-        inputTemplate: '{"accountId": <$.body.accountId>,"template": <$.body.template>}',
+        inputTemplate: '{"accountId": "<$.body.accountId>","template": "<$.body.template>"}',
       },
     }),
   }

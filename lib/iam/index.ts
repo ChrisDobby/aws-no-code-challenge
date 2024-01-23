@@ -12,7 +12,6 @@ export const create = ({ scope, namespace }: { scope: Construct; namespace: stri
       new iam.ServicePrincipal("apigateway.amazonaws.com"),
     ),
     managedPolicies: [
-      // iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonAPIGatewayPushToCloudWatchLogs"),
       iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonDynamoDBFullAccess"),
       iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonEventBridgeFullAccess"),
       iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSQSFullAccess"),

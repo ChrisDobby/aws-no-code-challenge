@@ -4,7 +4,7 @@ import { IRole } from "aws-cdk-lib/aws-iam"
 import * as sfn from "aws-cdk-lib/aws-stepfunctions"
 import { Construct } from "constructs"
 
-const definition = (trialsApi: IRestApi, apiConnection: IConnection) => ({
+const definition = (demoApi: IRestApi, apiConnection: IConnection) => ({
   Comment: "A description of my state machine",
   StartAt: "Map",
   States: {
@@ -24,7 +24,7 @@ const definition = (trialsApi: IRestApi, apiConnection: IConnection) => ({
               Authentication: {
                 ConnectionArn: apiConnection.connectionArn, // "arn:aws:events:eu-west-1:604776666101:connection/api-key-connection/c916f9ec-21ac-494b-8be8-cd68035aa05f",
               },
-              ApiEndpoint: trialsApi.deploymentStage.urlForPath("/email"),
+              ApiEndpoint: demoApi.deploymentStage.urlForPath("/email"),
               RequestBody: {
                 "accountId.$": "$.accountId",
                 "template.$": "$.template",
@@ -50,22 +50,10 @@ const definition = (trialsApi: IRestApi, apiConnection: IConnection) => ({
   },
 })
 
-export const create = ({
-  scope,
-  namespace,
-  role,
-  trialsApi,
-  apiConnection,
-}: {
-  scope: Construct
-  namespace: string
-  role: IRole
-  trialsApi: IRestApi
-  apiConnection: IConnection
-}) =>
+export const create = ({ scope, namespace, role, demoApi, apiConnection }: { scope: Construct; namespace: string; role: IRole; demoApi: IRestApi; apiConnection: IConnection }) =>
   new sfn.StateMachine(scope, "email-sender", {
     stateMachineName: `${namespace}-email-sender`,
     stateMachineType: sfn.StateMachineType.EXPRESS,
     role,
-    definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(trialsApi, apiConnection))),
+    definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(demoApi, apiConnection))),
   })

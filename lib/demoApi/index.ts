@@ -1,15 +1,33 @@
 import * as apiGateway from "aws-cdk-lib/aws-apigateway"
+import { IRole } from "aws-cdk-lib/aws-iam"
 import { Construct } from "constructs"
+import * as sns from "aws-cdk-lib/aws-sns"
+import * as iam from "aws-cdk-lib/aws-iam"
 
 export const create = ({ scope, namespace }: { scope: Construct; namespace: string }) => {
+  const role = new iam.Role(scope, "demo-role", {
+    roleName: `${namespace}-demo-role`,
+    assumedBy: new iam.CompositePrincipal(new iam.ServicePrincipal("apigateway.amazonaws.com")),
+    managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSNSFullAccess")],
+  })
+  const demoEmailTopic = new sns.Topic(scope, "demo-email-topic", { topicName: `${namespace}-demo-email` })
   const demoApi = new apiGateway.RestApi(scope, "demo-api", { restApiName: `${namespace}-demo-api` })
   demoApi.root.addResource("email").addMethod(
     "POST",
-    new apiGateway.MockIntegration({
-      integrationResponses: [{ statusCode: "200" }],
-      passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
-      requestTemplates: {
-        "application/json": '{ "statusCode": 200 }',
+    new apiGateway.AwsIntegration({
+      service: "sns",
+      path: "/",
+      integrationHttpMethod: "POST",
+      options: {
+        passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
+        credentialsRole: role,
+        requestParameters: {
+          "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'",
+        },
+        requestTemplates: {
+          "application/json": `Action=Publish&TopicArn=$util.urlEncode(\'${demoEmailTopic.topicArn}\')&Message=$util.urlEncode($input.body)`,
+        },
+        integrationResponses: [{ statusCode: "200" }],
       },
     }),
     {
