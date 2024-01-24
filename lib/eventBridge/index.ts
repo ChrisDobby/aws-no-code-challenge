@@ -6,6 +6,10 @@ import { IQueue } from "aws-cdk-lib/aws-sqs"
 import { IStateMachine } from "aws-cdk-lib/aws-stepfunctions"
 import { Construct } from "constructs"
 
+export const createBasic = ({ scope, trialsBusName }: { scope: Construct; trialsBusName: string }) => ({
+  trialsBus: new eventBridge.EventBus(scope, "trials-bus", { eventBusName: trialsBusName }),
+})
+
 export const create = ({
   scope,
   namespace,
@@ -29,7 +33,7 @@ export const create = ({
   emailSenderStateMachine: IStateMachine
   emailEnricherStateMachine: IStateMachine
 }) => {
-  const trialsBus = new eventBridge.EventBus(scope, "trials-bus", { eventBusName: trialsBusName })
+  const { trialsBus } = createBasic({ scope, trialsBusName })
 
   return {
     trialsBus,

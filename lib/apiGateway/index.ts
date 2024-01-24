@@ -8,66 +8,80 @@ export const create = ({
   role,
   eligibilityTableName,
   trialsTableName,
+  isBasic,
 }: {
   scope: Construct
   namespace: string
   role: IRole
   eligibilityTableName: string
   trialsTableName: string
+  isBasic?: boolean
 }) => {
   const trialsApi = new apiGateway.RestApi(scope, "trials-api", { restApiName: `${namespace}-trials-api` })
-  trialsApi.root
-    .addResource("eligibility")
-    .addResource("{accountId}")
-    .addMethod(
-      "GET",
-      new apiGateway.AwsIntegration({
-        service: "dynamodb",
-        action: "GetItem",
-        integrationHttpMethod: "POST",
-        options: {
-          passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
-          credentialsRole: role,
-          requestTemplates: {
-            "application/json": JSON.stringify({
-              TableName: eligibilityTableName,
-              Key: {
-                accountId: { S: "$input.params('accountId')" },
-              },
-            }),
-          },
-          integrationResponses: [
-            {
-              statusCode: "200",
-              responseTemplates: {
-                "application/json": `
+  const trialRequestModel = trialsApi.addModel("trial-request", {
+    modelName: `${namespace}TrialRequest`,
+    schema: {
+      type: apiGateway.JsonSchemaType.OBJECT,
+      properties: {
+        feature: { type: apiGateway.JsonSchemaType.STRING, enum: ["slider"] },
+      },
+      required: ["feature"],
+    },
+  })
+
+  if (!isBasic) {
+    trialsApi.root
+      .addResource("eligibility")
+      .addResource("{accountId}")
+      .addMethod(
+        "GET",
+        new apiGateway.AwsIntegration({
+          service: "dynamodb",
+          action: "GetItem",
+          integrationHttpMethod: "POST",
+          options: {
+            passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
+            credentialsRole: role,
+            requestTemplates: {
+              "application/json": JSON.stringify({
+                TableName: eligibilityTableName,
+                Key: {
+                  accountId: { S: "$input.params('accountId')" },
+                },
+              }),
+            },
+            integrationResponses: [
+              {
+                statusCode: "200",
+                responseTemplates: {
+                  "application/json": `
                   #set($inputRoot = $input.path('$'))
                   #if($inputRoot.Item.accountId.S != '') #set($isEligible = true) #else #set($isEligible = false) #end
                   {
                       "isEligible": $isEligible
                   }`,
+                },
               },
-            },
-          ],
+            ],
+          },
+        }),
+        {
+          apiKeyRequired: true,
+          methodResponses: [{ statusCode: "200" }],
         },
-      }),
-      {
-        apiKeyRequired: true,
-        methodResponses: [{ statusCode: "200" }],
-      },
-    )
-  const trialsAccountResource = trialsApi.root.addResource("trials").addResource("{accountId}")
-  trialsAccountResource.addMethod(
-    "GET",
-    new apiGateway.AwsIntegration({
-      service: "dynamodb",
-      action: "Query",
-      integrationHttpMethod: "POST",
-      options: {
-        passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
-        credentialsRole: role,
-        requestTemplates: {
-          "application/json": `
+      )
+    const trialsAccountResource = trialsApi.root.addResource("trials").addResource("{accountId}")
+    trialsAccountResource.addMethod(
+      "GET",
+      new apiGateway.AwsIntegration({
+        service: "dynamodb",
+        action: "Query",
+        integrationHttpMethod: "POST",
+        options: {
+          passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
+          credentialsRole: role,
+          requestTemplates: {
+            "application/json": `
             {
               "TableName": "${trialsTableName}",
               "KeyConditionExpression": "accountId = :accountId",
@@ -77,12 +91,12 @@ export const create = ({
                   }
               }
           }`,
-        },
-        integrationResponses: [
-          {
-            statusCode: "200",
-            responseTemplates: {
-              "application/json": `
+          },
+          integrationResponses: [
+            {
+              statusCode: "200",
+              responseTemplates: {
+                "application/json": `
                 #set($inputRoot = $input.path('$'))
                 {
                     "trials": [
@@ -95,39 +109,28 @@ export const create = ({
                   #end
                     ]
                 }`,
+              },
             },
-          },
-        ],
+          ],
+        },
+      }),
+      {
+        apiKeyRequired: true,
+        methodResponses: [{ statusCode: "200" }],
       },
-    }),
-    {
-      apiKeyRequired: true,
-      methodResponses: [{ statusCode: "200" }],
-    },
-  )
+    )
 
-  const trialRequestModel = trialsApi.addModel("trial-request", {
-    modelName: `${namespace}TrialRequest`,
-    schema: {
-      type: apiGateway.JsonSchemaType.OBJECT,
-      properties: {
-        feature: { type: apiGateway.JsonSchemaType.STRING, enum: ["slider"] },
-      },
-      required: ["feature"],
-    },
-  })
-
-  trialsAccountResource.addMethod(
-    "POST",
-    new apiGateway.AwsIntegration({
-      service: "dynamodb",
-      action: "TransactWriteItems",
-      integrationHttpMethod: "POST",
-      options: {
-        passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
-        credentialsRole: role,
-        requestTemplates: {
-          "application/json": `
+    trialsAccountResource.addMethod(
+      "POST",
+      new apiGateway.AwsIntegration({
+        service: "dynamodb",
+        action: "TransactWriteItems",
+        integrationHttpMethod: "POST",
+        options: {
+          passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
+          credentialsRole: role,
+          requestTemplates: {
+            "application/json": `
             #set($all_parts = $context.requestTime.split(':'))
             #set($date_parts = $all_parts[0].split('/'))
             #set($day = $date_parts[0])
@@ -173,32 +176,32 @@ export const create = ({
                     }
                 ]
             }`,
+          },
+          integrationResponses: [
+            { statusCode: "200", responseTemplates: { "application/json": "" } },
+            { statusCode: "409", selectionPattern: "400" },
+          ],
         },
-        integrationResponses: [
-          { statusCode: "200", responseTemplates: { "application/json": "" } },
-          { statusCode: "409", selectionPattern: "400" },
-        ],
+      }),
+      {
+        apiKeyRequired: true,
+        requestValidatorOptions: { validateRequestBody: true },
+        requestModels: { "application/json": trialRequestModel },
+        methodResponses: [{ statusCode: "200" }, { statusCode: "409" }],
       },
-    }),
-    {
-      apiKeyRequired: true,
-      requestValidatorOptions: { validateRequestBody: true },
-      requestModels: { "application/json": trialRequestModel },
-      methodResponses: [{ statusCode: "200" }, { statusCode: "409" }],
-    },
-  )
+    )
 
-  trialsAccountResource.addResource("incomplete").addMethod(
-    "GET",
-    new apiGateway.AwsIntegration({
-      service: "dynamodb",
-      action: "Query",
-      integrationHttpMethod: "POST",
-      options: {
-        passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
-        credentialsRole: role,
-        requestTemplates: {
-          "application/json": `
+    trialsAccountResource.addResource("incomplete").addMethod(
+      "GET",
+      new apiGateway.AwsIntegration({
+        service: "dynamodb",
+        action: "Query",
+        integrationHttpMethod: "POST",
+        options: {
+          passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
+          credentialsRole: role,
+          requestTemplates: {
+            "application/json": `
             {
               "TableName": "${trialsTableName}",
               "KeyConditionExpression": "accountId = :accountId",
@@ -215,12 +218,12 @@ export const create = ({
                   }
               }
             }`,
-        },
-        integrationResponses: [
-          {
-            statusCode: "200",
-            responseTemplates: {
-              "application/json": `
+          },
+          integrationResponses: [
+            {
+              statusCode: "200",
+              responseTemplates: {
+                "application/json": `
                 #set($inputRoot = $input.path('$'))
                 {
                     "trials": [
@@ -233,16 +236,17 @@ export const create = ({
                   #end
                     ]
                 }`,
+              },
             },
-          },
-        ],
+          ],
+        },
+      }),
+      {
+        apiKeyRequired: true,
+        methodResponses: [{ statusCode: "200" }],
       },
-    }),
-    {
-      apiKeyRequired: true,
-      methodResponses: [{ statusCode: "200" }],
-    },
-  )
+    )
+  }
 
   return { trialsApi }
 }
