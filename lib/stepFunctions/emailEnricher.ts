@@ -1,9 +1,10 @@
 import { IRestApi } from "aws-cdk-lib/aws-apigateway"
+import { IConnection } from "aws-cdk-lib/aws-events"
 import { IRole } from "aws-cdk-lib/aws-iam"
 import * as sfn from "aws-cdk-lib/aws-stepfunctions"
 import { Construct } from "constructs"
 
-const definition = (trialsTableName: string, demoApi: IRestApi) => ({
+const definition = (trialsTableName: string, demoApi: IRestApi, apiConnection: IConnection) => ({
   Comment: "Enrich email data",
   StartAt: "Enrich each",
   States: {
@@ -51,7 +52,7 @@ const definition = (trialsTableName: string, demoApi: IRestApi) => ({
                       ApiEndpoint: demoApi.deploymentStage.urlForPath("/users"),
                       Method: "GET",
                       Authentication: {
-                        ConnectionArn: "arn:aws:events:eu-west-1:604776666101:connection/api-key-connection/c916f9ec-21ac-494b-8be8-cd68035aa05f",
+                        ConnectionArn: apiConnection.connectionArn,
                       },
                     },
                     Retry: [
@@ -92,10 +93,24 @@ const definition = (trialsTableName: string, demoApi: IRestApi) => ({
   },
 })
 
-export const create = ({ scope, namespace, role, trialsTableName, demoApi }: { scope: Construct; namespace: string; role: IRole; trialsTableName: string; demoApi: IRestApi }) =>
+export const create = ({
+  scope,
+  namespace,
+  role,
+  trialsTableName,
+  demoApi,
+  apiConnection,
+}: {
+  scope: Construct
+  namespace: string
+  role: IRole
+  trialsTableName: string
+  demoApi: IRestApi
+  apiConnection: IConnection
+}) =>
   new sfn.StateMachine(scope, "email-enricher", {
     stateMachineName: `${namespace}-email-enricher`,
     stateMachineType: sfn.StateMachineType.EXPRESS,
     role,
-    definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(trialsTableName, demoApi))),
+    definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(trialsTableName, demoApi, apiConnection))),
   })

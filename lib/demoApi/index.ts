@@ -31,6 +31,7 @@ export const create = ({ scope, namespace }: { scope: Construct; namespace: stri
       },
     }),
     {
+      apiKeyRequired: true,
       methodResponses: [{ statusCode: "200" }],
     },
   )
@@ -44,6 +45,7 @@ export const create = ({ scope, namespace }: { scope: Construct; namespace: stri
       },
     }),
     {
+      apiKeyRequired: true,
       methodResponses: [{ statusCode: "200" }],
     },
   )

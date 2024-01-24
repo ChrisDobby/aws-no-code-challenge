@@ -9,7 +9,7 @@ import * as eventBridge from "./eventBridge"
 import * as demoApiGateway from "./demoApi"
 import * as apiGateway from "./apiGateway"
 import * as stepFunctions from "./stepFunctions"
-import * as connection from "./connection"
+import * as apiKeys from "./apiKeys"
 
 const namespace = "ncc"
 
@@ -22,12 +22,12 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     super(scope, id, props)
 
     const { demoApi } = demoApiGateway.create({ scope: this, namespace })
-    const { apiConnection } = connection.create({ scope: this, namespace })
     const { role } = iam.create({ scope: this, namespace })
     const { publishedQueue, emailQueue } = sqs.create({ scope: this, namespace })
     sns.create({ scope: this, namespace, publishedQueue })
     dynamo.create({ scope: this, eligibilityTableName, trialsTableName })
     const { trialsApi } = apiGateway.create({ scope: this, namespace, role, eligibilityTableName, trialsTableName })
+    const { apiConnection } = apiKeys.create({ scope: this, namespace, apis: [demoApi, trialsApi] })
     const { emailEnricherStateMachine, emailSchedulerStateMachine, emailSenderStateMachine, trialWorkflowStateMachine } = stepFunctions.create({
       scope: this,
       namespace,

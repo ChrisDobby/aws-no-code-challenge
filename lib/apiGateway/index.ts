@@ -52,6 +52,7 @@ export const create = ({
         },
       }),
       {
+        apiKeyRequired: true,
         methodResponses: [{ statusCode: "200" }],
       },
     )
@@ -100,6 +101,7 @@ export const create = ({
       },
     }),
     {
+      apiKeyRequired: true,
       methodResponses: [{ statusCode: "200" }],
     },
   )
@@ -179,6 +181,7 @@ export const create = ({
       },
     }),
     {
+      apiKeyRequired: true,
       requestValidatorOptions: { validateRequestBody: true },
       requestModels: { "application/json": trialRequestModel },
       methodResponses: [{ statusCode: "200" }, { statusCode: "409" }],
@@ -236,6 +239,7 @@ export const create = ({
       },
     }),
     {
+      apiKeyRequired: true,
       methodResponses: [{ statusCode: "200" }],
     },
   )

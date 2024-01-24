@@ -57,8 +57,8 @@ export const create = ({
         }),
       }),
     ),
-    startedScheduleRule: new eventBridge.Rule(scope, "send-update-email-day4-rule", {
-      ruleName: `${namespace}-send-update-email-day4`,
+    startedScheduleRule: new eventBridge.Rule(scope, "schedule-update-email-rule", {
+      ruleName: `${namespace}-schedule-update-email`,
       eventBus: trialsBus,
       eventPattern: { detailType: ["trial-started"] },
     }).addTarget(
