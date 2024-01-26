@@ -29,6 +29,8 @@ export const create = ({
     },
   })
 
+  trialsApi.root.addMethod("GET", new apiGateway.MockIntegration({}))
+
   if (!isBasic) {
     trialsApi.root
       .addResource("eligibility")

@@ -2,12 +2,14 @@
   "name": "aws-no-code-challenge",
   "version": "0.1.0",
   "bin": {
-    "aws-no-code-challenge": "bin/aws-no-code-challenge.js"
+    "aws-no-code-challenge": "bin/aws-no-code-challenge.js",
+    "aws-no-code-challenge-basic": "bin/aws-no-code-challenge-basic.js"
   },
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "cdk": "cdk"
+    "deploy:full": "cdk --app 'npx ts-node --prefer-ts-exts bin/aws-no-code-challenge.ts' deploy",
+    "deploy:base": "cdk --app 'npx ts-node --prefer-ts-exts bin/aws-no-code-challenge-basic.ts' deploy"
   },
   "devDependencies": {
     "@types/node": "20.11.5",
