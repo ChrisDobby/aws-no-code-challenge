@@ -29,9 +29,10 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const { trialsApi } = apiGateway.create({ scope: this, namespace, role, eligibilityTableName, trialsTableName, isBasic: props?.isBasic })
     const { apiConnection } = apiKeys.create({ scope: this, namespace, apis: [demoApi, trialsApi] })
     if (props?.isBasic) {
+      stepFunctions.createBasic({ scope: this, namespace, role })
       eventBridge.createBasic({ scope: this, trialsBusName })
     } else {
-      const { emailEnricherStateMachine, emailSchedulerStateMachine, emailSenderStateMachine, trialWorkflowStateMachine } = stepFunctions.create({
+      const { emailEnricherStateMachine, emailSchedulerStateMachine, trialWorkflowStateMachine } = stepFunctions.create({
         scope: this,
         namespace,
         role,
@@ -51,8 +52,9 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
         publishedQueue,
         emailSchedulerStateMachine,
         trialWorkflowStateMachine,
-        emailSenderStateMachine,
         emailEnricherStateMachine,
+        apiConnection,
+        demoApi,
       })
     }
   }

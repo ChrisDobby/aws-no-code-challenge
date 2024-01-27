@@ -1,4 +1,5 @@
 import { aws_events_targets as targets } from "aws-cdk-lib"
+import { IRestApi } from "aws-cdk-lib/aws-apigateway"
 import * as eventBridge from "aws-cdk-lib/aws-events"
 import { IRole } from "aws-cdk-lib/aws-iam"
 import * as pipes from "aws-cdk-lib/aws-pipes"
@@ -19,8 +20,9 @@ export const create = ({
   publishedQueue,
   emailSchedulerStateMachine,
   trialWorkflowStateMachine,
-  emailSenderStateMachine,
   emailEnricherStateMachine,
+  apiConnection,
+  demoApi,
 }: {
   scope: Construct
   namespace: string
@@ -30,11 +32,17 @@ export const create = ({
   publishedQueue: IQueue
   emailSchedulerStateMachine: IStateMachine
   trialWorkflowStateMachine: IStateMachine
-  emailSenderStateMachine: IStateMachine
   emailEnricherStateMachine: IStateMachine
+  apiConnection: eventBridge.IConnection
+  demoApi: IRestApi
 }) => {
   const { trialsBus } = createBasic({ scope, trialsBusName })
-
+  const emailSendApiDestination = new eventBridge.ApiDestination(scope, "api-destination", {
+    apiDestinationName: `${namespace}-send-email`,
+    connection: apiConnection,
+    endpoint: demoApi.deploymentStage.urlForPath("/email"),
+    httpMethod: eventBridge.HttpMethod.POST,
+  })
   return {
     trialsBus,
     startedEmailRule: new eventBridge.Rule(scope, "send-started-email-rule", {
@@ -119,7 +127,7 @@ export const create = ({
       name: `${namespace}-email`,
       roleArn: role.roleArn,
       source: emailQueue.queueArn,
-      target: emailSenderStateMachine.stateMachineArn,
+      target: emailSendApiDestination.apiDestinationArn,
       enrichment: emailEnricherStateMachine.stateMachineArn,
       enrichmentParameters: {
         inputTemplate: '{"accountId": "<$.body.accountId>","template": "<$.body.template>"}',
