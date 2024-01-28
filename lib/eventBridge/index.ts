@@ -69,8 +69,8 @@ export const create = ({
         }),
       }),
     ),
-    startedScheduleRule: new eventBridge.Rule(scope, "schedule-update-email-rule", {
-      ruleName: `${namespace}-schedule-update-email`,
+    startedScheduleRule: new eventBridge.Rule(scope, "schedule-emails-rule", {
+      ruleName: `${namespace}-schedule-emails`,
       eventBus: trialsBus,
       eventPattern: { detailType: ["trial-started"] },
     }).addTarget(
