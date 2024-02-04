@@ -14,8 +14,8 @@ import * as apiKeys from "./apiKeys"
 const namespace = "ncc"
 
 const eligibilityTableName = `${namespace}-eligibility`
-const trialsTableName = `${namespace}-trials`
-const trialsBusName = `${namespace}-trials`
+const processTableName = `${namespace}-process`
+const processBusName = `${namespace}-process`
 
 export class AwsNoCodeChallengeStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps & { isBasic?: boolean }) {
@@ -25,33 +25,33 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const { role } = iam.create({ scope: this, namespace })
     const { publishedQueue, emailQueue } = sqs.create({ scope: this, namespace })
     sns.create({ scope: this, namespace, publishedQueue, isBasic: props?.isBasic })
-    dynamo.create({ scope: this, eligibilityTableName, trialsTableName })
-    const { trialsApi } = apiGateway.create({ scope: this, namespace, role, eligibilityTableName, trialsTableName, isBasic: props?.isBasic })
-    const { apiConnection } = apiKeys.create({ scope: this, namespace, apis: [demoApi, trialsApi] })
+    dynamo.create({ scope: this, eligibilityTableName, processTableName })
+    const { processApi } = apiGateway.create({ scope: this, namespace, role, eligibilityTableName, processTableName, isBasic: props?.isBasic })
+    const { apiConnection } = apiKeys.create({ scope: this, namespace, apis: [demoApi, processApi] })
     if (props?.isBasic) {
       stepFunctions.createBasic({ scope: this, namespace, role })
-      eventBridge.createBasic({ scope: this, trialsBusName })
+      eventBridge.createBasic({ scope: this, processBusName })
     } else {
-      const { emailEnricherStateMachine, emailSchedulerStateMachine, trialWorkflowStateMachine } = stepFunctions.create({
+      const { emailEnricherStateMachine, emailSchedulerStateMachine, workflowStateMachine } = stepFunctions.create({
         scope: this,
         namespace,
         role,
-        trialsTableName,
+        processTableName,
         demoApi,
         emailQueue,
-        trialsApi,
-        trialsBusName,
+        processApi,
+        processBusName,
         apiConnection,
       })
       eventBridge.create({
         scope: this,
         namespace,
         role,
-        trialsBusName,
+        processBusName,
         emailQueue,
         publishedQueue,
         emailSchedulerStateMachine,
-        trialWorkflowStateMachine,
+        workflowStateMachine,
         emailEnricherStateMachine,
         apiConnection,
         demoApi,

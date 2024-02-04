@@ -2,8 +2,8 @@ import { IRole } from "aws-cdk-lib/aws-iam"
 import * as sfn from "aws-cdk-lib/aws-stepfunctions"
 import { Construct } from "constructs"
 
-const definition = (trialsTableName: string, trialsBusName: string) => ({
-  Comment: "Trials workflow state machine",
+const definition = (processTableName: string, processBusName: string) => ({
+  Comment: "Workflow state machine",
   StartAt: "Map",
   States: {
     Map: {
@@ -12,51 +12,51 @@ const definition = (trialsTableName: string, trialsBusName: string) => ({
         ProcessorConfig: {
           Mode: "INLINE",
         },
-        StartAt: "Get existing trial",
+        StartAt: "Get existing process",
         States: {
-          "Get existing trial": {
+          "Get existing process": {
             Type: "Task",
             Resource: "arn:aws:states:::dynamodb:getItem",
             Parameters: {
-              TableName: trialsTableName,
+              TableName: processTableName,
               Key: {
                 accountId: {
                   "S.$": "$.accountId",
                 },
               },
             },
-            Next: "Is trial state created",
+            Next: "Is state created",
             ResultPath: "$.existing",
           },
-          "Is trial state created": {
+          "Is state created": {
             Type: "Choice",
             Choices: [
               {
-                Variable: "$.existing.Item.trialState.S",
+                Variable: "$.existing.Item.processState.S",
                 StringMatches: "created",
-                Next: "Trial started",
+                Next: "Started",
               },
             ],
             Default: "Success",
           },
-          "Trial started": {
+          Started: {
             Type: "Parallel",
-            Next: "Wait until end of trial",
+            Next: "Wait until end of process",
             Branches: [
               {
-                StartAt: "Set trial to in progress",
+                StartAt: "Set process to in progress",
                 States: {
-                  "Set trial to in progress": {
+                  "Set process to in progress": {
                     Type: "Task",
                     Resource: "arn:aws:states:::dynamodb:updateItem",
                     Parameters: {
-                      TableName: trialsTableName,
+                      TableName: processTableName,
                       Key: {
                         accountId: {
                           "S.$": "$.accountId",
                         },
                       },
-                      UpdateExpression: "SET trialState = :inprogress, startedAt = :startedAt",
+                      UpdateExpression: "SET processState = :inprogress, startedAt = :startedAt",
                       ExpressionAttributeValues: {
                         ":inprogress": {
                           S: "in-progress",
@@ -83,9 +83,9 @@ const definition = (trialsTableName: string, trialsBusName: string) => ({
                           Detail: {
                             "accountId.$": "$.accountId",
                           },
-                          DetailType: "trial-started",
-                          EventBusName: trialsBusName,
-                          Source: "trials.statemachine",
+                          DetailType: "process-started",
+                          EventBusName: processBusName,
+                          Source: "workflow.statemachine",
                         },
                       ],
                     },
@@ -100,28 +100,28 @@ const definition = (trialsTableName: string, trialsBusName: string) => ({
           Success: {
             Type: "Succeed",
           },
-          "Wait until end of trial": {
+          "Wait until end of process": {
             Type: "Wait",
             Seconds: 120,
-            Next: "Trial complete",
+            Next: "Complete",
           },
-          "Trial complete": {
+          Complete: {
             Type: "Parallel",
             Branches: [
               {
-                StartAt: "Set trial to complete",
+                StartAt: "Set process to complete",
                 States: {
-                  "Set trial to complete": {
+                  "Set process to complete": {
                     Type: "Task",
                     Resource: "arn:aws:states:::dynamodb:updateItem",
                     Parameters: {
-                      TableName: trialsTableName,
+                      TableName: processTableName,
                       Key: {
                         accountId: {
                           "S.$": "$.accountId",
                         },
                       },
-                      UpdateExpression: "SET trialState = :complete, completedAt = :completedAt",
+                      UpdateExpression: "SET processState = :complete, completedAt = :completedAt",
                       ExpressionAttributeValues: {
                         ":complete": {
                           S: "complete",
@@ -147,9 +147,9 @@ const definition = (trialsTableName: string, trialsBusName: string) => ({
                           Detail: {
                             "accountId.$": "$.accountId",
                           },
-                          DetailType: "trial-complete",
-                          EventBusName: trialsBusName,
-                          Source: "trials.statemachine",
+                          DetailType: "process-complete",
+                          EventBusName: processBusName,
+                          Source: "workflow.statemachine",
                         },
                       ],
                     },
@@ -171,18 +171,18 @@ export const create = ({
   scope,
   namespace,
   role,
-  trialsTableName,
-  trialsBusName,
+  processTableName,
+  processBusName,
 }: {
   scope: Construct
   namespace: string
   role: IRole
-  trialsTableName: string
-  trialsBusName: string
+  processTableName: string
+  processBusName: string
 }) =>
-  new sfn.StateMachine(scope, "trial-workflow", {
-    stateMachineName: `${namespace}-trial-workflow`,
+  new sfn.StateMachine(scope, "workflow", {
+    stateMachineName: `${namespace}-workflow`,
     stateMachineType: sfn.StateMachineType.STANDARD,
     role,
-    definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(trialsTableName, trialsBusName))),
+    definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(processTableName, processBusName))),
   })

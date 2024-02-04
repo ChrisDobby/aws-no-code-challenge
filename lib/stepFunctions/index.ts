@@ -6,7 +6,7 @@ import { IQueue } from "aws-cdk-lib/aws-sqs"
 import * as addDays from "./addDays"
 import * as emailEnricher from "./emailEnricher"
 import * as emailScheduler from "./emailScheduler"
-import * as trialWorkflow from "./trialWorkflow"
+import * as workflow from "./workflow"
 import { IConnection } from "aws-cdk-lib/aws-events"
 
 export const createBasic = (params: { scope: Construct; namespace: string; role: IRole }) => ({
@@ -17,14 +17,14 @@ export const create = (params: {
   scope: Construct
   namespace: string
   role: IRole
-  trialsTableName: string
+  processTableName: string
   demoApi: IRestApi
   emailQueue: IQueue
-  trialsApi: IRestApi
-  trialsBusName: string
+  processApi: IRestApi
+  processBusName: string
   apiConnection: IConnection
 }) => ({
   emailEnricherStateMachine: emailEnricher.create(params),
   emailSchedulerStateMachine: emailScheduler.create({ ...params, addDaysStateMachine: createBasic(params).addDaysStateMachine }),
-  trialWorkflowStateMachine: trialWorkflow.create(params),
+  workflowStateMachine: workflow.create(params),
 })
