@@ -170,18 +170,20 @@ const definition = (processTableName: string, processBusName: string) => ({
 export const create = ({
   scope,
   namespace,
+  serviceName,
   role,
   processTableName,
   processBusName,
 }: {
   scope: Construct
   namespace: string
+  serviceName: string
   role: IRole
   processTableName: string
   processBusName: string
 }) =>
   new sfn.StateMachine(scope, "workflow", {
-    stateMachineName: `${namespace}-workflow`,
+    stateMachineName: `${namespace}-${serviceName}-workflow`,
     stateMachineType: sfn.StateMachineType.STANDARD,
     role,
     definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(processTableName, processBusName))),

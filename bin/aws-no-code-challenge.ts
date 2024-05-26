@@ -9,4 +9,5 @@ new AwsNoCodeChallengeStack(app, "AwsNoCodeChallengeStack", {
   tags: {
     project: "aws-no-code-challenge",
   },
+  serviceName: "process",
 })

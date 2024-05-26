@@ -14,6 +14,7 @@ export const createBasic = ({ scope, processBusName }: { scope: Construct; proce
 export const create = ({
   scope,
   namespace,
+  serviceName,
   processBusName,
   role,
   emailQueue,
@@ -26,6 +27,7 @@ export const create = ({
 }: {
   scope: Construct
   namespace: string
+  serviceName: string
   processBusName: string
   role: IRole
   emailQueue: IQueue
@@ -38,7 +40,7 @@ export const create = ({
 }) => {
   const { processBus } = createBasic({ scope, processBusName })
   const emailSendApiDestination = new eventBridge.ApiDestination(scope, "api-destination", {
-    apiDestinationName: `${namespace}-send-email`,
+    apiDestinationName: `${namespace}-${serviceName}-send-email`,
     connection: apiConnection,
     endpoint: demoApi.deploymentStage.urlForPath("/email"),
     httpMethod: eventBridge.HttpMethod.POST,
@@ -46,7 +48,7 @@ export const create = ({
   return {
     processBus,
     startedEmailRule: new eventBridge.Rule(scope, "send-started-email-rule", {
-      ruleName: `${namespace}-send-started-email`,
+      ruleName: `${namespace}-${serviceName}-send-started-email`,
       eventBus: processBus,
       eventPattern: { detailType: ["process-started"] },
     }).addTarget(
@@ -58,7 +60,7 @@ export const create = ({
       }),
     ),
     completedEmailRule: new eventBridge.Rule(scope, "send-completed-email-rule", {
-      ruleName: `${namespace}-send-completed-email`,
+      ruleName: `${namespace}-${serviceName}-send-completed-email`,
       eventBus: processBus,
       eventPattern: { detailType: ["process-complete"] },
     }).addTarget(
@@ -70,7 +72,7 @@ export const create = ({
       }),
     ),
     startedScheduleRule: new eventBridge.Rule(scope, "schedule-emails-rule", {
-      ruleName: `${namespace}-schedule-emails`,
+      ruleName: `${namespace}-${serviceName}-schedule-emails`,
       eventBus: processBus,
       eventPattern: { detailType: ["process-started"] },
     }).addTarget(
@@ -95,7 +97,7 @@ export const create = ({
       }),
     ),
     publishedPipe: new pipes.CfnPipe(scope, "published-pipe", {
-      name: `${namespace}-published`,
+      name: `${namespace}-${serviceName}-published`,
       roleArn: role.roleArn,
       source: publishedQueue.queueArn,
       target: workflowStateMachine.stateMachineArn,
@@ -124,7 +126,7 @@ export const create = ({
       },
     }),
     emailPipe: new pipes.CfnPipe(scope, "email-pipe", {
-      name: `${namespace}-email`,
+      name: `${namespace}-${serviceName}-email`,
       roleArn: role.roleArn,
       source: emailQueue.queueArn,
       target: emailSendApiDestination.apiDestinationArn,

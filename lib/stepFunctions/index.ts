@@ -9,13 +9,14 @@ import * as emailScheduler from "./emailScheduler"
 import * as workflow from "./workflow"
 import { IConnection } from "aws-cdk-lib/aws-events"
 
-export const createBasic = (params: { scope: Construct; namespace: string; role: IRole }) => ({
+export const createBasic = (params: { scope: Construct; namespace: string; serviceName: string; role: IRole }) => ({
   addDaysStateMachine: addDays.create(params),
 })
 
 export const create = (params: {
   scope: Construct
   namespace: string
+  serviceName: string
   role: IRole
   processTableName: string
   demoApi: IRestApi

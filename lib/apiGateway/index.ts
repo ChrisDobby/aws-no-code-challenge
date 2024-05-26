@@ -5,6 +5,7 @@ import { Construct } from "constructs"
 export const create = ({
   scope,
   namespace,
+  serviceName,
   role,
   eligibilityTableName,
   processTableName,
@@ -12,14 +13,15 @@ export const create = ({
 }: {
   scope: Construct
   namespace: string
+  serviceName: string
   role: IRole
   eligibilityTableName: string
   processTableName: string
   isBasic?: boolean
 }) => {
-  const processApi = new apiGateway.RestApi(scope, "process-api", { restApiName: `${namespace}-process-api` })
+  const processApi = new apiGateway.RestApi(scope, "process-api", { restApiName: `${namespace}-${serviceName}-process-api` })
   const processRequestModel = processApi.addModel("process-request", {
-    modelName: `${namespace}ProcessRequest`,
+    modelName: `${namespace}${serviceName}ProcessRequest`,
     schema: {
       type: apiGateway.JsonSchemaType.OBJECT,
       properties: {

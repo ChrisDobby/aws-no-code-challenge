@@ -10,4 +10,5 @@ new AwsNoCodeChallengeStack(app, "AwsNoCodeChallengeBaseStack", {
     project: "aws-no-code-challenge",
   },
   isBasic: true,
+  serviceName: "process",
 })

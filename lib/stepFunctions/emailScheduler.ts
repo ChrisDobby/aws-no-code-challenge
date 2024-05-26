@@ -75,18 +75,20 @@ const definition = (role: IRole, addDaysStateMachine: sfn.IStateMachine, emailQu
 export const create = ({
   scope,
   namespace,
+  serviceName,
   role,
   addDaysStateMachine,
   emailQueue,
 }: {
   scope: Construct
   namespace: string
+  serviceName: string
   role: IRole
   addDaysStateMachine: sfn.IStateMachine
   emailQueue: IQueue
 }) =>
   new sfn.StateMachine(scope, "email-scheduler", {
-    stateMachineName: `${namespace}-email-scheduler`,
+    stateMachineName: `${namespace}-${serviceName}-email-scheduler`,
     stateMachineType: sfn.StateMachineType.EXPRESS,
     role,
     definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(role, addDaysStateMachine, emailQueue))),

@@ -96,6 +96,7 @@ const definition = (processTableName: string, demoApi: IRestApi, apiConnection: 
 export const create = ({
   scope,
   namespace,
+  serviceName,
   role,
   processTableName,
   demoApi,
@@ -103,13 +104,14 @@ export const create = ({
 }: {
   scope: Construct
   namespace: string
+  serviceName: string
   role: IRole
   processTableName: string
   demoApi: IRestApi
   apiConnection: IConnection
 }) =>
   new sfn.StateMachine(scope, "email-enricher", {
-    stateMachineName: `${namespace}-email-enricher`,
+    stateMachineName: `${namespace}-${serviceName}-email-enricher`,
     stateMachineType: sfn.StateMachineType.EXPRESS,
     role,
     definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(processTableName, demoApi, apiConnection))),
