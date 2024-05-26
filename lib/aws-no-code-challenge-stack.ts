@@ -14,14 +14,27 @@ import * as apiKeys from "./apiKeys"
 const namespace = "ncc"
 
 export class AwsNoCodeChallengeStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps & { isBasic?: boolean; serviceName: string }) {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props)
 
     if (!props) {
       return
     }
 
-    const { serviceName, isBasic, env } = props
+    const serviceParameter = new cdk.CfnParameter(this, "service", {
+      description: "The name of the service",
+      type: "String",
+    })
+
+    const baseParameter = new cdk.CfnParameter(this, "base", {
+      description: "Just deploying the base resources",
+      type: "string",
+      allowedValues: ["true", "false"],
+    })
+
+    const serviceName = serviceParameter.valueAsString
+    const isBasic = baseParameter.valueAsString === "true"
+    const { env } = props
 
     const eligibilityTableName = `${namespace}-${serviceName}Eligibility`
     const processTableName = `${namespace}-${serviceName}`
