@@ -40,7 +40,7 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const processTableName = `${namespace}-${serviceName}`
     const processBusName = `${namespace}-${serviceName}`
 
-    const { demoApi } = demoApiGateway.create({ scope: this, namespace, serviceName })
+    const { demoApi } = demoApiGateway.create({ scope: this, namespace, serviceName, region: env?.region })
     const { role } = iam.create({ scope: this, namespace, serviceName, region: env?.region })
     const { publishedQueue, emailQueue } = sqs.create({ scope: this, namespace, serviceName })
     sns.create({ scope: this, namespace, serviceName, publishedQueue, isBasic })

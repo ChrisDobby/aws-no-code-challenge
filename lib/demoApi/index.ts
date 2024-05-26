@@ -4,9 +4,9 @@ import { Construct } from "constructs"
 import * as sns from "aws-cdk-lib/aws-sns"
 import * as iam from "aws-cdk-lib/aws-iam"
 
-export const create = ({ scope, namespace, serviceName }: { scope: Construct; namespace: string; serviceName: string }) => {
+export const create = ({ scope, namespace, serviceName, region }: { scope: Construct; namespace: string; serviceName: string; region?: string }) => {
   const role = new iam.Role(scope, "demo-role", {
-    roleName: `${namespace}-${serviceName}-demo-role`,
+    roleName: `${namespace}-${serviceName}-${region}-demo-role`,
     assumedBy: new iam.CompositePrincipal(new iam.ServicePrincipal("apigateway.amazonaws.com")),
     managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSNSFullAccess")],
   })
