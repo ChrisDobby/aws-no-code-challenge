@@ -4,7 +4,7 @@ import { IRole } from "aws-cdk-lib/aws-iam"
 import * as sfn from "aws-cdk-lib/aws-stepfunctions"
 import { Construct } from "constructs"
 
-const definition = (processTableName: string, demoApi: IRestApi, apiConnection: IConnection) => ({
+const definition = (tableName: string, demoApi: IRestApi, apiConnection: IConnection, serviceName: string) => ({
   Comment: "Enrich email data",
   StartAt: "Enrich each",
   States: {
@@ -20,13 +20,13 @@ const definition = (processTableName: string, demoApi: IRestApi, apiConnection: 
             Type: "Parallel",
             Branches: [
               {
-                StartAt: "Get process",
+                StartAt: `Get ${serviceName}`,
                 States: {
-                  "Get process": {
+                  [`Get ${serviceName}`]: {
                     Type: "Task",
                     Resource: "arn:aws:states:::dynamodb:getItem",
                     Parameters: {
-                      TableName: processTableName,
+                      TableName: tableName,
                       Key: {
                         accountId: {
                           "S.$": "$.accountId",
@@ -34,10 +34,10 @@ const definition = (processTableName: string, demoApi: IRestApi, apiConnection: 
                       },
                     },
                     End: true,
-                    ResultPath: "$.process",
+                    ResultPath: `$.${serviceName}`,
                     ResultSelector: {
                       "startedAt.$": "$.Item.startedAt.S",
-                      "processState.$": "$.Item.processState.S",
+                      "currentState.$": "$.Item.currentState.S",
                     },
                   },
                 },
@@ -82,7 +82,7 @@ const definition = (processTableName: string, demoApi: IRestApi, apiConnection: 
             Parameters: {
               "accountId.$": "$[0].accountId",
               "template.$": "$[0].template",
-              "process.$": "$[0].process",
+              [`${serviceName}.$`]: `$[0].${serviceName}`,
               "user.$": "$[1].user",
             },
           },
@@ -98,7 +98,7 @@ export const create = ({
   namespace,
   serviceName,
   role,
-  processTableName,
+  tableName,
   demoApi,
   apiConnection,
 }: {
@@ -106,7 +106,7 @@ export const create = ({
   namespace: string
   serviceName: string
   role: IRole
-  processTableName: string
+  tableName: string
   demoApi: IRestApi
   apiConnection: IConnection
 }) =>
@@ -114,5 +114,5 @@ export const create = ({
     stateMachineName: `${namespace}-${serviceName}-email-enricher`,
     stateMachineType: sfn.StateMachineType.EXPRESS,
     role,
-    definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(processTableName, demoApi, apiConnection))),
+    definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(tableName, demoApi, apiConnection, serviceName))),
   })

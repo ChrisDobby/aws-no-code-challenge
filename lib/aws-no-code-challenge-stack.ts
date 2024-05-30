@@ -28,7 +28,7 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
 
     const baseParameter = new cdk.CfnParameter(this, "base", {
       description: "Just deploying the base resources",
-      type: "string",
+      type: "String",
       allowedValues: ["true", "false"],
     })
 
@@ -37,30 +37,29 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const { env } = props
 
     const eligibilityTableName = `${namespace}-${serviceName}Eligibility`
-    const processTableName = `${namespace}-${serviceName}`
-    const processBusName = `${namespace}-${serviceName}`
+    const tableName = `${namespace}-${serviceName}`
+    const busName = `${namespace}-${serviceName}`
 
     const { demoApi } = demoApiGateway.create({ scope: this, namespace, serviceName, region: env?.region })
     const { role } = iam.create({ scope: this, namespace, serviceName, region: env?.region })
     const { publishedQueue, emailQueue } = sqs.create({ scope: this, namespace, serviceName })
     sns.create({ scope: this, namespace, serviceName, publishedQueue, isBasic })
-    dynamo.create({ scope: this, eligibilityTableName, processTableName })
-    const { processApi } = apiGateway.create({ scope: this, namespace, serviceName, role, eligibilityTableName, processTableName, isBasic })
-    const { apiConnection } = apiKeys.create({ scope: this, namespace, serviceName, apis: [demoApi, processApi] })
+    dynamo.create({ scope: this, eligibilityTableName, tableName })
+    const { restApi } = apiGateway.create({ scope: this, namespace, serviceName, role, eligibilityTableName, tableName, isBasic })
+    const { apiConnection } = apiKeys.create({ scope: this, namespace, serviceName, apis: [demoApi, restApi] })
     if (isBasic) {
       stepFunctions.createBasic({ scope: this, namespace, serviceName, role })
-      eventBridge.createBasic({ scope: this, processBusName })
+      eventBridge.createBasic({ scope: this, busName })
     } else {
       const { emailEnricherStateMachine, emailSchedulerStateMachine, workflowStateMachine } = stepFunctions.create({
         scope: this,
         namespace,
         serviceName,
         role,
-        processTableName,
+        tableName,
         demoApi,
         emailQueue,
-        processApi,
-        processBusName,
+        busName,
         apiConnection,
       })
       eventBridge.create({
@@ -68,7 +67,7 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
         namespace,
         serviceName,
         role,
-        processBusName,
+        busName,
         emailQueue,
         publishedQueue,
         emailSchedulerStateMachine,

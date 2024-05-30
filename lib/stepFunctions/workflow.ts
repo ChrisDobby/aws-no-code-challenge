@@ -2,7 +2,7 @@ import { IRole } from "aws-cdk-lib/aws-iam"
 import * as sfn from "aws-cdk-lib/aws-stepfunctions"
 import { Construct } from "constructs"
 
-const definition = (processTableName: string, processBusName: string) => ({
+const definition = (tableName: string, busName: string, serviceName: string) => ({
   Comment: "Workflow state machine",
   StartAt: "Map",
   States: {
@@ -12,13 +12,13 @@ const definition = (processTableName: string, processBusName: string) => ({
         ProcessorConfig: {
           Mode: "INLINE",
         },
-        StartAt: "Get existing process",
+        StartAt: `Get existing ${serviceName}`,
         States: {
-          "Get existing process": {
+          [`Get existing ${serviceName}`]: {
             Type: "Task",
             Resource: "arn:aws:states:::dynamodb:getItem",
             Parameters: {
-              TableName: processTableName,
+              TableName: tableName,
               Key: {
                 accountId: {
                   "S.$": "$.accountId",
@@ -32,7 +32,7 @@ const definition = (processTableName: string, processBusName: string) => ({
             Type: "Choice",
             Choices: [
               {
-                Variable: "$.existing.Item.processState.S",
+                Variable: "$.existing.Item.currentState.S",
                 StringMatches: "created",
                 Next: "Started",
               },
@@ -41,22 +41,22 @@ const definition = (processTableName: string, processBusName: string) => ({
           },
           Started: {
             Type: "Parallel",
-            Next: "Wait until end of process",
+            Next: `Wait until end of ${serviceName}`,
             Branches: [
               {
-                StartAt: "Set process to in progress",
+                StartAt: `Set ${serviceName} to in progress`,
                 States: {
-                  "Set process to in progress": {
+                  [`Set ${serviceName} to in progress`]: {
                     Type: "Task",
                     Resource: "arn:aws:states:::dynamodb:updateItem",
                     Parameters: {
-                      TableName: processTableName,
+                      TableName: tableName,
                       Key: {
                         accountId: {
                           "S.$": "$.accountId",
                         },
                       },
-                      UpdateExpression: "SET processState = :inprogress, startedAt = :startedAt",
+                      UpdateExpression: "SET currentState = :inprogress, startedAt = :startedAt",
                       ExpressionAttributeValues: {
                         ":inprogress": {
                           S: "in-progress",
@@ -83,8 +83,8 @@ const definition = (processTableName: string, processBusName: string) => ({
                           Detail: {
                             "accountId.$": "$.accountId",
                           },
-                          DetailType: "process-started",
-                          EventBusName: processBusName,
+                          DetailType: `${serviceName}-started`,
+                          EventBusName: busName,
                           Source: "workflow.statemachine",
                         },
                       ],
@@ -100,7 +100,7 @@ const definition = (processTableName: string, processBusName: string) => ({
           Success: {
             Type: "Succeed",
           },
-          "Wait until end of process": {
+          [`Wait until end of ${serviceName}`]: {
             Type: "Wait",
             Seconds: 120,
             Next: "Complete",
@@ -109,19 +109,19 @@ const definition = (processTableName: string, processBusName: string) => ({
             Type: "Parallel",
             Branches: [
               {
-                StartAt: "Set process to complete",
+                StartAt: `Set ${serviceName} to complete`,
                 States: {
-                  "Set process to complete": {
+                  [`Set ${serviceName} to complete`]: {
                     Type: "Task",
                     Resource: "arn:aws:states:::dynamodb:updateItem",
                     Parameters: {
-                      TableName: processTableName,
+                      TableName: tableName,
                       Key: {
                         accountId: {
                           "S.$": "$.accountId",
                         },
                       },
-                      UpdateExpression: "SET processState = :complete, completedAt = :completedAt",
+                      UpdateExpression: "SET currentState = :complete, completedAt = :completedAt",
                       ExpressionAttributeValues: {
                         ":complete": {
                           S: "complete",
@@ -147,8 +147,8 @@ const definition = (processTableName: string, processBusName: string) => ({
                           Detail: {
                             "accountId.$": "$.accountId",
                           },
-                          DetailType: "process-complete",
-                          EventBusName: processBusName,
+                          DetailType: `${serviceName}-complete`,
+                          EventBusName: busName,
                           Source: "workflow.statemachine",
                         },
                       ],
@@ -172,19 +172,19 @@ export const create = ({
   namespace,
   serviceName,
   role,
-  processTableName,
-  processBusName,
+  tableName,
+  busName,
 }: {
   scope: Construct
   namespace: string
   serviceName: string
   role: IRole
-  processTableName: string
-  processBusName: string
+  tableName: string
+  busName: string
 }) =>
   new sfn.StateMachine(scope, "workflow", {
     stateMachineName: `${namespace}-${serviceName}-workflow`,
     stateMachineType: sfn.StateMachineType.STANDARD,
     role,
-    definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(processTableName, processBusName))),
+    definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition(tableName, busName, serviceName))),
   })

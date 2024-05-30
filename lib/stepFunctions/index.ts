@@ -18,11 +18,10 @@ export const create = (params: {
   namespace: string
   serviceName: string
   role: IRole
-  processTableName: string
+  tableName: string
   demoApi: IRestApi
   emailQueue: IQueue
-  processApi: IRestApi
-  processBusName: string
+  busName: string
   apiConnection: IConnection
 }) => ({
   emailEnricherStateMachine: emailEnricher.create(params),

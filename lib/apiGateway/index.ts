@@ -8,7 +8,7 @@ export const create = ({
   serviceName,
   role,
   eligibilityTableName,
-  processTableName,
+  tableName,
   isBasic,
 }: {
   scope: Construct
@@ -16,12 +16,12 @@ export const create = ({
   serviceName: string
   role: IRole
   eligibilityTableName: string
-  processTableName: string
+  tableName: string
   isBasic?: boolean
 }) => {
-  const processApi = new apiGateway.RestApi(scope, "process-api", { restApiName: `${namespace}-${serviceName}-process-api` })
-  const processRequestModel = processApi.addModel("process-request", {
-    modelName: `${namespace}${serviceName}ProcessRequest`,
+  const restApi = new apiGateway.RestApi(scope, "rest-api", { restApiName: `${namespace}-${serviceName}-api` })
+  const requestModel = restApi.addModel("post-request", {
+    modelName: `${namespace}${serviceName}Request`,
     schema: {
       type: apiGateway.JsonSchemaType.OBJECT,
       properties: {
@@ -31,10 +31,10 @@ export const create = ({
     },
   })
 
-  processApi.root.addMethod("GET", new apiGateway.MockIntegration({}))
+  restApi.root.addMethod("GET", new apiGateway.MockIntegration({}))
 
   if (!isBasic) {
-    processApi.root
+    restApi.root
       .addResource("eligibility")
       .addResource("{accountId}")
       .addMethod(
@@ -74,8 +74,8 @@ export const create = ({
           methodResponses: [{ statusCode: "200" }],
         },
       )
-    const processAccountResource = processApi.root.addResource("process").addResource("{accountId}")
-    processAccountResource.addMethod(
+    const accountResource = restApi.root.addResource("ncc").addResource("{accountId}")
+    accountResource.addMethod(
       "GET",
       new apiGateway.AwsIntegration({
         service: "dynamodb",
@@ -87,7 +87,7 @@ export const create = ({
           requestTemplates: {
             "application/json": `
             {
-              "TableName": "${processTableName}",
+              "TableName": "${tableName}",
               "KeyConditionExpression": "accountId = :accountId",
               "ExpressionAttributeValues": {
                   ":accountId": {
@@ -103,11 +103,11 @@ export const create = ({
                 "application/json": `
                 #set($inputRoot = $input.path('$'))
                 {
-                    "processes": [
+                    "${serviceName}": [
                         #foreach($elem in $inputRoot.Items) {
                             "accountId": "$elem.accountId.S",
                             "createdAt": "$elem.createdAt.S",
-                            "processState": "$elem.processState.S",
+                            "currentState": "$elem.currentState.S",
                             "feature": "$elem.feature.S"
                         }#if($foreach.hasNext),#end
                   #end
@@ -124,7 +124,7 @@ export const create = ({
       },
     )
 
-    processAccountResource.addMethod(
+    accountResource.addMethod(
       "POST",
       new apiGateway.AwsIntegration({
         service: "dynamodb",
@@ -160,7 +160,7 @@ export const create = ({
                     },
                     {
                         "Put": {
-                            "TableName": "${processTableName}",
+                            "TableName": "${tableName}",
                             "ConditionExpression": "attribute_not_exists(accountId)",
                             "Item": {
                                 "accountId": {
@@ -169,7 +169,7 @@ export const create = ({
                                 "createdAt": {
                                     "S": "\${year}-\${month}-\${day}T\${hours}:\${minutes}:\${seconds}.000Z"
                                 },
-                                "processState": {
+                                "currentState": {
                                     "S": "created"
                                 },
                                 "feature": {
@@ -190,12 +190,12 @@ export const create = ({
       {
         apiKeyRequired: true,
         requestValidatorOptions: { validateRequestBody: true },
-        requestModels: { "application/json": processRequestModel },
+        requestModels: { "application/json": requestModel },
         methodResponses: [{ statusCode: "200" }, { statusCode: "409" }],
       },
     )
 
-    processAccountResource.addResource("incomplete").addMethod(
+    accountResource.addResource("incomplete").addMethod(
       "GET",
       new apiGateway.AwsIntegration({
         service: "dynamodb",
@@ -207,9 +207,9 @@ export const create = ({
           requestTemplates: {
             "application/json": `
             {
-              "TableName": "${processTableName}",
+              "TableName": "${tableName}",
               "KeyConditionExpression": "accountId = :accountId",
-              "FilterExpression": "processState in (:created, :inProgress)",
+              "FilterExpression": "currentState in (:created, :inProgress)",
               "ExpressionAttributeValues": {
                   ":accountId": {
                       "S": "$input.params('accountId')"
@@ -230,11 +230,11 @@ export const create = ({
                 "application/json": `
                 #set($inputRoot = $input.path('$'))
                 {
-                    "processes": [
+                    "${serviceName}": [
                         #foreach($elem in $inputRoot.Items) {
                             "accountId": "$elem.accountId.S",
                             "createdAt": "$elem.createdAt.S",
-                            "processState": "$elem.processState.S",
+                            "currentState": "$elem.currentState.S",
                             "feature": "$elem.feature.S"
                         }#if($foreach.hasNext),#end
                   #end
@@ -252,5 +252,5 @@ export const create = ({
     )
   }
 
-  return { processApi }
+  return { restApi }
 }
