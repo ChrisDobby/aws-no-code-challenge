@@ -7,14 +7,15 @@ import { IQueue } from "aws-cdk-lib/aws-sqs"
 import { IStateMachine } from "aws-cdk-lib/aws-stepfunctions"
 import { Construct } from "constructs"
 
-export const createBasic = ({ scope, processBusName }: { scope: Construct; processBusName: string }) => ({
-  processBus: new eventBridge.EventBus(scope, "process-bus", { eventBusName: processBusName }),
+export const createBasic = ({ scope, busName }: { scope: Construct; busName: string }) => ({
+  bus: new eventBridge.EventBus(scope, "bus", { eventBusName: busName }),
 })
 
 export const create = ({
   scope,
   namespace,
-  processBusName,
+  serviceName,
+  busName,
   role,
   emailQueue,
   publishedQueue,
@@ -26,7 +27,8 @@ export const create = ({
 }: {
   scope: Construct
   namespace: string
-  processBusName: string
+  serviceName: string
+  busName: string
   role: IRole
   emailQueue: IQueue
   publishedQueue: IQueue
@@ -36,19 +38,19 @@ export const create = ({
   apiConnection: eventBridge.IConnection
   demoApi: IRestApi
 }) => {
-  const { processBus } = createBasic({ scope, processBusName })
+  const { bus } = createBasic({ scope, busName })
   const emailSendApiDestination = new eventBridge.ApiDestination(scope, "api-destination", {
-    apiDestinationName: `${namespace}-send-email`,
+    apiDestinationName: `${namespace}-${serviceName}-send-email`,
     connection: apiConnection,
     endpoint: demoApi.deploymentStage.urlForPath("/email"),
     httpMethod: eventBridge.HttpMethod.POST,
   })
   return {
-    processBus,
+    bus,
     startedEmailRule: new eventBridge.Rule(scope, "send-started-email-rule", {
-      ruleName: `${namespace}-send-started-email`,
-      eventBus: processBus,
-      eventPattern: { detailType: ["process-started"] },
+      ruleName: `${namespace}-${serviceName}-send-started-email`,
+      eventBus: bus,
+      eventPattern: { detailType: [`${serviceName}-started`] },
     }).addTarget(
       new targets.SqsQueue(emailQueue, {
         message: eventBridge.RuleTargetInput.fromObject({
@@ -58,9 +60,9 @@ export const create = ({
       }),
     ),
     completedEmailRule: new eventBridge.Rule(scope, "send-completed-email-rule", {
-      ruleName: `${namespace}-send-completed-email`,
-      eventBus: processBus,
-      eventPattern: { detailType: ["process-complete"] },
+      ruleName: `${namespace}-${serviceName}-send-completed-email`,
+      eventBus: bus,
+      eventPattern: { detailType: [`${serviceName}-complete`] },
     }).addTarget(
       new targets.SqsQueue(emailQueue, {
         message: eventBridge.RuleTargetInput.fromObject({
@@ -70,9 +72,9 @@ export const create = ({
       }),
     ),
     startedScheduleRule: new eventBridge.Rule(scope, "schedule-emails-rule", {
-      ruleName: `${namespace}-schedule-emails`,
-      eventBus: processBus,
-      eventPattern: { detailType: ["process-started"] },
+      ruleName: `${namespace}-${serviceName}-schedule-emails`,
+      eventBus: bus,
+      eventPattern: { detailType: [`${serviceName}-started`] },
     }).addTarget(
       new targets.SfnStateMachine(emailSchedulerStateMachine, {
         input: eventBridge.RuleTargetInput.fromObject([
@@ -95,7 +97,7 @@ export const create = ({
       }),
     ),
     publishedPipe: new pipes.CfnPipe(scope, "published-pipe", {
-      name: `${namespace}-published`,
+      name: `${namespace}-${serviceName}-published`,
       roleArn: role.roleArn,
       source: publishedQueue.queueArn,
       target: workflowStateMachine.stateMachineArn,
@@ -124,7 +126,7 @@ export const create = ({
       },
     }),
     emailPipe: new pipes.CfnPipe(scope, "email-pipe", {
-      name: `${namespace}-email`,
+      name: `${namespace}-${serviceName}-email`,
       roleArn: role.roleArn,
       source: emailQueue.queueArn,
       target: emailSendApiDestination.apiDestinationArn,

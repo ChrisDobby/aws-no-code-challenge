@@ -8,8 +8,8 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "deploy:full": "cdk --app 'npx ts-node --prefer-ts-exts bin/aws-no-code-challenge.ts' deploy",
-    "deploy:base": "cdk --app 'npx ts-node --prefer-ts-exts bin/aws-no-code-challenge-basic.ts' deploy"
+    "deploy:full": "cdk --app 'npx ts-node --prefer-ts-exts bin/aws-no-code-challenge.ts' deploy --parameters base=false",
+    "deploy:base": "cdk --app 'npx ts-node --prefer-ts-exts bin/aws-no-code-challenge.ts' deploy --parameters base=true"
   },
   "devDependencies": {
     "@types/node": "20.11.5",

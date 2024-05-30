@@ -13,41 +13,61 @@ import * as apiKeys from "./apiKeys"
 
 const namespace = "ncc"
 
-const eligibilityTableName = `${namespace}-eligibility`
-const processTableName = `${namespace}-process`
-const processBusName = `${namespace}-process`
-
 export class AwsNoCodeChallengeStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps & { isBasic?: boolean }) {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props)
 
-    const { demoApi } = demoApiGateway.create({ scope: this, namespace })
-    const { role } = iam.create({ scope: this, namespace })
-    const { publishedQueue, emailQueue } = sqs.create({ scope: this, namespace })
-    sns.create({ scope: this, namespace, publishedQueue, isBasic: props?.isBasic })
-    dynamo.create({ scope: this, eligibilityTableName, processTableName })
-    const { processApi } = apiGateway.create({ scope: this, namespace, role, eligibilityTableName, processTableName, isBasic: props?.isBasic })
-    const { apiConnection } = apiKeys.create({ scope: this, namespace, apis: [demoApi, processApi] })
-    if (props?.isBasic) {
-      stepFunctions.createBasic({ scope: this, namespace, role })
-      eventBridge.createBasic({ scope: this, processBusName })
+    if (!props) {
+      return
+    }
+
+    const serviceParameter = new cdk.CfnParameter(this, "service", {
+      description: "The name of the service",
+      type: "String",
+    })
+
+    const baseParameter = new cdk.CfnParameter(this, "base", {
+      description: "Just deploying the base resources",
+      type: "String",
+      allowedValues: ["true", "false"],
+    })
+
+    const serviceName = serviceParameter.valueAsString
+    const isBasic = baseParameter.valueAsString === "true"
+    const { env } = props
+
+    const eligibilityTableName = `${namespace}-${serviceName}Eligibility`
+    const tableName = `${namespace}-${serviceName}`
+    const busName = `${namespace}-${serviceName}`
+
+    const { demoApi } = demoApiGateway.create({ scope: this, namespace, serviceName, region: env?.region })
+    const { role } = iam.create({ scope: this, namespace, serviceName, region: env?.region })
+    const { publishedQueue, emailQueue } = sqs.create({ scope: this, namespace, serviceName })
+    sns.create({ scope: this, namespace, serviceName, publishedQueue, isBasic })
+    dynamo.create({ scope: this, eligibilityTableName, tableName })
+    const { restApi } = apiGateway.create({ scope: this, namespace, serviceName, role, eligibilityTableName, tableName, isBasic })
+    const { apiConnection } = apiKeys.create({ scope: this, namespace, serviceName, apis: [demoApi, restApi] })
+    if (isBasic) {
+      stepFunctions.createBasic({ scope: this, namespace, serviceName, role })
+      eventBridge.createBasic({ scope: this, busName })
     } else {
       const { emailEnricherStateMachine, emailSchedulerStateMachine, workflowStateMachine } = stepFunctions.create({
         scope: this,
         namespace,
+        serviceName,
         role,
-        processTableName,
+        tableName,
         demoApi,
         emailQueue,
-        processApi,
-        processBusName,
+        busName,
         apiConnection,
       })
       eventBridge.create({
         scope: this,
         namespace,
+        serviceName,
         role,
-        processBusName,
+        busName,
         emailQueue,
         publishedQueue,
         emailSchedulerStateMachine,
