@@ -49,7 +49,7 @@ const definition = (tableName: string, demoApi: IRestApi, apiConnection: IConnec
                     Type: "Task",
                     Resource: "arn:aws:states:::http:invoke",
                     Parameters: {
-                      ApiEndpoint: demoApi.deploymentStage.urlForPath("/users"),
+                      "ApiEndpoint.$": `States.Format('${demoApi.deploymentStage.urlForPath("/users")}/{}', $.accountId)`,
                       Method: "GET",
                       Authentication: {
                         ConnectionArn: apiConnection.connectionArn,

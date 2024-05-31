@@ -7,8 +7,28 @@ import { IQueue } from "aws-cdk-lib/aws-sqs"
 import { IStateMachine } from "aws-cdk-lib/aws-stepfunctions"
 import { Construct } from "constructs"
 
-export const createBasic = ({ scope, busName }: { scope: Construct; busName: string }) => ({
+export const createBasic = ({
+  scope,
+  namespace,
+  serviceName,
+  busName,
+  apiConnection,
+  demoApi,
+}: {
+  scope: Construct
+  namespace: string
+  serviceName: string
+  busName: string
+  apiConnection: eventBridge.IConnection
+  demoApi: IRestApi
+}) => ({
   bus: new eventBridge.EventBus(scope, "bus", { eventBusName: busName }),
+  emailSendApiDestination: new eventBridge.ApiDestination(scope, "api-destination", {
+    apiDestinationName: `${namespace}-${serviceName}-send-email`,
+    connection: apiConnection,
+    endpoint: demoApi.deploymentStage.urlForPath("/email"),
+    httpMethod: eventBridge.HttpMethod.POST,
+  }),
 })
 
 export const create = ({
@@ -38,13 +58,7 @@ export const create = ({
   apiConnection: eventBridge.IConnection
   demoApi: IRestApi
 }) => {
-  const { bus } = createBasic({ scope, busName })
-  const emailSendApiDestination = new eventBridge.ApiDestination(scope, "api-destination", {
-    apiDestinationName: `${namespace}-${serviceName}-send-email`,
-    connection: apiConnection,
-    endpoint: demoApi.deploymentStage.urlForPath("/email"),
-    httpMethod: eventBridge.HttpMethod.POST,
-  })
+  const { bus, emailSendApiDestination } = createBasic({ scope, namespace, serviceName, busName, apiConnection, demoApi })
   return {
     bus,
     startedEmailRule: new eventBridge.Rule(scope, "send-started-email-rule", {
@@ -102,6 +116,9 @@ export const create = ({
       source: publishedQueue.queueArn,
       target: workflowStateMachine.stateMachineArn,
       sourceParameters: {
+        sqsQueueParameters: {
+          batchSize: 1,
+        },
         filterCriteria: {
           filters: [
             {

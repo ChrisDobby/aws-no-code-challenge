@@ -49,7 +49,7 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const { apiConnection } = apiKeys.create({ scope: this, namespace, serviceName, apis: [demoApi, restApi] })
     if (isBasic) {
       stepFunctions.createBasic({ scope: this, namespace, serviceName, role })
-      eventBridge.createBasic({ scope: this, busName })
+      eventBridge.createBasic({ scope: this, namespace, serviceName, busName, apiConnection, demoApi })
     } else {
       const { emailEnricherStateMachine, emailSchedulerStateMachine, workflowStateMachine } = stepFunctions.create({
         scope: this,

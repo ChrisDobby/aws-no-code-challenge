@@ -35,20 +35,23 @@ export const create = ({ scope, namespace, serviceName, region }: { scope: Const
       methodResponses: [{ statusCode: "200" }],
     },
   )
-  demoApi.root.addResource("users").addMethod(
-    "GET",
-    new apiGateway.MockIntegration({
-      integrationResponses: [{ statusCode: "200", responseTemplates: { "application/json": JSON.stringify({ name: "Chris Dobson", email: "chrisdobby.dev@gmail.com" }) } }],
-      passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
-      requestTemplates: {
-        "application/json": '{ "statusCode": 200 }',
+  demoApi.root
+    .addResource("users")
+    .addResource("{accountId}")
+    .addMethod(
+      "GET",
+      new apiGateway.MockIntegration({
+        integrationResponses: [{ statusCode: "200", responseTemplates: { "application/json": JSON.stringify({ name: "Chris Dobson", email: "chrisdobby.dev@gmail.com" }) } }],
+        passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
+        requestTemplates: {
+          "application/json": '{ "statusCode": 200 }',
+        },
+      }),
+      {
+        apiKeyRequired: true,
+        methodResponses: [{ statusCode: "200" }],
       },
-    }),
-    {
-      apiKeyRequired: true,
-      methodResponses: [{ statusCode: "200" }],
-    },
-  )
+    )
 
   return { demoApi }
 }
