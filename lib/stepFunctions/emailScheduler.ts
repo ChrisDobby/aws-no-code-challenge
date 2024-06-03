@@ -9,65 +9,48 @@ const definition = (role: IRole, addDaysStateMachine: sfn.IStateMachine, emailQu
   States: {
     "Add current date/time": {
       Type: "Pass",
-      Next: "Map",
+      Next: "Add days",
       Parameters: {
-        "schedules.$": "$",
-        "dateTime.$": "States.StringSplit($$.State.EnteredTime, '.')",
+        "schedule.$": "$",
+        "dateTime.$": "States.ArrayGetItem(States.StringSplit($$.State.EnteredTime, '.'), 0)",
       },
     },
-    Map: {
-      Type: "Map",
-      ItemProcessor: {
-        ProcessorConfig: {
-          Mode: "INLINE",
-        },
-        StartAt: "Add days",
-        States: {
-          "Add days": {
-            Type: "Task",
-            Next: "Create schedule",
-            Parameters: {
-              StateMachineArn: addDaysStateMachine.stateMachineArn,
-              Input: {
-                "dateTime.$": "$.dateTime",
-                "daysToAdd.$": "$.schedule.days",
-              },
-            },
-            Resource: "arn:aws:states:::aws-sdk:sfn:startSyncExecution",
-            ResultPath: "$.schedule.create",
-            ResultSelector: {
-              "at.$": "States.StringToJson($.Output)",
-            },
-          },
-          "Create schedule": {
-            Type: "Task",
-            End: true,
-            Parameters: {
-              FlexibleTimeWindow: {
-                Mode: "OFF",
-              },
-              ActionAfterCompletion: "DELETE",
-              "Name.$": "States.Format('{}{}{}', $.schedule.accountId, $.schedule.template, $.schedule.days)",
-              "ScheduleExpression.$": "States.Format('at({})', $.schedule.create.at.dateTime)",
-              Target: {
-                Arn: emailQueue.queueArn,
-                RoleArn: role.roleArn,
-                Input: {
-                  "accountId.$": "$.schedule.accountId",
-                  "template.$": "$.schedule.template",
-                },
-              },
-            },
-            Resource: "arn:aws:states:::aws-sdk:scheduler:createSchedule",
-          },
+    "Add days": {
+      Type: "Task",
+      Next: "Create schedule",
+      Parameters: {
+        StateMachineArn: addDaysStateMachine.stateMachineArn,
+        Input: {
+          "dateTime.$": "$.dateTime",
+          "daysToAdd.$": "$.schedule.days",
         },
       },
+      Resource: "arn:aws:states:::aws-sdk:sfn:startSyncExecution",
+      ResultPath: "$.schedule.create",
+      ResultSelector: {
+        "at.$": "States.StringToJson($.Output)",
+      },
+    },
+    "Create schedule": {
+      Type: "Task",
       End: true,
-      ItemsPath: "$.schedules",
-      ItemSelector: {
-        "dateTime.$": "$.dateTime[0]",
-        "schedule.$": "$$.Map.Item.Value",
+      Parameters: {
+        FlexibleTimeWindow: {
+          Mode: "OFF",
+        },
+        ActionAfterCompletion: "DELETE",
+        "Name.$": "States.Format('{}{}{}', $.schedule.accountId, $.schedule.template, $.schedule.days)",
+        "ScheduleExpression.$": "States.Format('at({})', $.schedule.create.at.dateTime)",
+        Target: {
+          Arn: emailQueue.queueArn,
+          RoleArn: role.roleArn,
+          Input: {
+            "accountId.$": "$.schedule.accountId",
+            "template.$": "$.schedule.template",
+          },
+        },
       },
+      Resource: "arn:aws:states:::aws-sdk:scheduler:createSchedule",
     },
   },
 })

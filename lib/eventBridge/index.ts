@@ -59,22 +59,52 @@ export const create = ({
   demoApi: IRestApi
 }) => {
   const { bus, emailSendApiDestination } = createBasic({ scope, namespace, serviceName, busName, apiConnection, demoApi })
+  const startedRule = new eventBridge.Rule(scope, "started-rule", {
+    ruleName: `${namespace}-${serviceName}-started`,
+    eventBus: bus,
+    eventPattern: { detailType: [`${serviceName}-started`] },
+  })
+  startedRule.addTarget(
+    new targets.SqsQueue(emailQueue, {
+      message: eventBridge.RuleTargetInput.fromObject({
+        accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
+        template: "started",
+      }),
+    }),
+  )
+  startedRule.addTarget(
+    new targets.SfnStateMachine(emailSchedulerStateMachine, {
+      input: eventBridge.RuleTargetInput.fromObject({
+        accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
+        template: "update",
+        days: 4,
+      }),
+    }),
+  )
+  startedRule.addTarget(
+    new targets.SfnStateMachine(emailSchedulerStateMachine, {
+      input: eventBridge.RuleTargetInput.fromObject({
+        accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
+        template: "update",
+        days: 8,
+      }),
+    }),
+  )
+  startedRule.addTarget(
+    new targets.SfnStateMachine(emailSchedulerStateMachine, {
+      input: eventBridge.RuleTargetInput.fromObject({
+        accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
+        template: "ending",
+        days: 10,
+      }),
+    }),
+  )
+
   return {
     bus,
-    startedEmailRule: new eventBridge.Rule(scope, "send-started-email-rule", {
-      ruleName: `${namespace}-${serviceName}-send-started-email`,
-      eventBus: bus,
-      eventPattern: { detailType: [`${serviceName}-started`] },
-    }).addTarget(
-      new targets.SqsQueue(emailQueue, {
-        message: eventBridge.RuleTargetInput.fromObject({
-          accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
-          template: "started",
-        }),
-      }),
-    ),
-    completedEmailRule: new eventBridge.Rule(scope, "send-completed-email-rule", {
-      ruleName: `${namespace}-${serviceName}-send-completed-email`,
+    startedRule,
+    completedRule: new eventBridge.Rule(scope, "complete-rule", {
+      ruleName: `${namespace}-${serviceName}-complete`,
       eventBus: bus,
       eventPattern: { detailType: [`${serviceName}-complete`] },
     }).addTarget(
@@ -83,31 +113,6 @@ export const create = ({
           accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
           template: "completed",
         }),
-      }),
-    ),
-    startedScheduleRule: new eventBridge.Rule(scope, "schedule-emails-rule", {
-      ruleName: `${namespace}-${serviceName}-schedule-emails`,
-      eventBus: bus,
-      eventPattern: { detailType: [`${serviceName}-started`] },
-    }).addTarget(
-      new targets.SfnStateMachine(emailSchedulerStateMachine, {
-        input: eventBridge.RuleTargetInput.fromObject([
-          {
-            accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
-            template: "update",
-            days: 4,
-          },
-          {
-            accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
-            template: "update",
-            days: 8,
-          },
-          {
-            accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
-            template: "ending",
-            days: 10,
-          },
-        ]),
       }),
     ),
     publishedPipe: new pipes.CfnPipe(scope, "published-pipe", {
