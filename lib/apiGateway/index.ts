@@ -9,7 +9,7 @@ export const create = ({
   role,
   eligibilityTableName,
   tableName,
-  isBasic,
+  isBase,
 }: {
   scope: Construct
   namespace: string
@@ -17,7 +17,7 @@ export const create = ({
   role: IRole
   eligibilityTableName: string
   tableName: string
-  isBasic?: boolean
+  isBase?: boolean
 }) => {
   const restApi = new apiGateway.RestApi(scope, "rest-api", { restApiName: `${namespace}-${serviceName}-api` })
   const requestModel = restApi.addModel("post-request", {
@@ -33,7 +33,7 @@ export const create = ({
 
   restApi.root.addMethod("GET", new apiGateway.MockIntegration({}))
 
-  if (!isBasic) {
+  if (!isBase) {
     restApi.root
       .addResource("eligibility")
       .addResource("{accountId}")

@@ -7,7 +7,7 @@ import { IQueue } from "aws-cdk-lib/aws-sqs"
 import { IStateMachine } from "aws-cdk-lib/aws-stepfunctions"
 import { Construct } from "constructs"
 
-export const createBasic = ({
+export const createBase = ({
   scope,
   namespace,
   serviceName,
@@ -58,7 +58,7 @@ export const create = ({
   apiConnection: eventBridge.IConnection
   demoApi: IRestApi
 }) => {
-  const { bus, emailSendApiDestination } = createBasic({ scope, namespace, serviceName, busName, apiConnection, demoApi })
+  const { bus, emailSendApiDestination } = createBase({ scope, namespace, serviceName, busName, apiConnection, demoApi })
   const startedRule = new eventBridge.Rule(scope, "started-rule", {
     ruleName: `${namespace}-${serviceName}-started`,
     eventBus: bus,

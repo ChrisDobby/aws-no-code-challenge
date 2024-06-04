@@ -2,8 +2,7 @@
   "name": "aws-no-code-challenge",
   "version": "0.1.0",
   "bin": {
-    "aws-no-code-challenge": "bin/aws-no-code-challenge.js",
-    "aws-no-code-challenge-basic": "bin/aws-no-code-challenge-basic.js"
+    "aws-no-code-challenge": "bin/aws-no-code-challenge.js"
   },
   "scripts": {
     "build": "tsc",

@@ -33,7 +33,7 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     })
 
     const serviceName = serviceParameter.valueAsString
-    const isBasic = baseParameter.valueAsString === "true"
+    const isBase = baseParameter.valueAsString === "true"
     const { env } = props
 
     const eligibilityTableName = `${namespace}-${serviceName}Eligibility`
@@ -43,13 +43,13 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const { demoApi } = demoApiGateway.create({ scope: this, namespace, serviceName, region: env?.region })
     const { role } = iam.create({ scope: this, namespace, serviceName, region: env?.region })
     const { publishedQueue, emailQueue } = sqs.create({ scope: this, namespace, serviceName })
-    sns.create({ scope: this, namespace, serviceName, publishedQueue, isBasic })
+    sns.create({ scope: this, namespace, serviceName, publishedQueue, isBase })
     dynamo.create({ scope: this, eligibilityTableName, tableName })
-    const { restApi } = apiGateway.create({ scope: this, namespace, serviceName, role, eligibilityTableName, tableName, isBasic })
+    const { restApi } = apiGateway.create({ scope: this, namespace, serviceName, role, eligibilityTableName, tableName, isBase })
     const { apiConnection } = apiKeys.create({ scope: this, namespace, serviceName, apis: [demoApi, restApi] })
-    if (isBasic) {
-      stepFunctions.createBasic({ scope: this, namespace, serviceName, role })
-      eventBridge.createBasic({ scope: this, namespace, serviceName, busName, apiConnection, demoApi })
+    if (isBase) {
+      stepFunctions.createBase({ scope: this, namespace, serviceName, role })
+      eventBridge.createBase({ scope: this, namespace, serviceName, busName, apiConnection, demoApi })
     } else {
       const { emailEnricherStateMachine, emailSchedulerStateMachine, workflowStateMachine } = stepFunctions.create({
         scope: this,

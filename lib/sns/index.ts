@@ -8,16 +8,16 @@ export const create = ({
   namespace,
   serviceName,
   publishedQueue,
-  isBasic,
+  isBase,
 }: {
   scope: Construct
   namespace: string
   serviceName: string
   publishedQueue: IQueue
-  isBasic?: boolean
+  isBase?: boolean
 }) => {
   const publishedTopic = new sns.Topic(scope, "published-topic", { topicName: `${namespace}-${serviceName}-published` })
-  if (!isBasic) {
+  if (!isBase) {
     publishedTopic.addSubscription(new snsSubscriptions.SqsSubscription(publishedQueue, { rawMessageDelivery: true }))
   }
 
