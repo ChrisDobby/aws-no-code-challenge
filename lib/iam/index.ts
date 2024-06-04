@@ -29,7 +29,12 @@ export const create = ({ scope, namespace, serviceName, region }: { scope: Const
         statements: [
           new iam.PolicyStatement({
             actions: ["events:*"],
-            resources: [`arn:aws:events:*:*:event-bus/${namespace}-*`, `arn:aws:events:*:*:rule/${namespace}-*/*`],
+            resources: [
+              `arn:aws:events:*:*:event-bus/${namespace}-*`,
+              `arn:aws:events:*:*:rule/${namespace}-*/*`,
+              `arn:aws:events:*:*:connection/${namespace}-*/*`,
+              `arn:aws:events:*:*:api-destination/${namespace}-*/*`,
+            ],
           }),
           new iam.PolicyStatement({
             actions: ["pipes:*"],
@@ -37,11 +42,11 @@ export const create = ({ scope, namespace, serviceName, region }: { scope: Const
           }),
           new iam.PolicyStatement({
             actions: ["scheduler:*"],
-            resources: [`arn:aws:scheduler:*:*:schedule/${namespace}-*/*`],
+            resources: [`arn:aws:scheduler:*:*:schedule/*/*`],
           }),
           new iam.PolicyStatement({
             actions: ["iam:PassRole"],
-            resources: [`arn:aws:iam:*:role/${namespace}-*`],
+            resources: [`arn:aws:iam::*:role/${namespace}-*`],
             conditions: {
               StringLike: { "iam:PassedToService": "scheduler.amazonaws.com" },
             },
