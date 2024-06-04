@@ -389,9 +389,9 @@ const definition = {
   },
 }
 
-export const create = ({ scope, namespace, role }: { scope: Construct; namespace: string; role: IRole }) =>
+export const create = ({ scope, namespace, serviceName, role }: { scope: Construct; namespace: string; serviceName: string; role: IRole }) =>
   new sfn.StateMachine(scope, "add-days", {
-    stateMachineName: `${namespace}-add-days`,
+    stateMachineName: `${namespace}-${serviceName}-add-days`,
     stateMachineType: sfn.StateMachineType.EXPRESS,
     role,
     definitionBody: sfn.DefinitionBody.fromString(JSON.stringify(definition)),

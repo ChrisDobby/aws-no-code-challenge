@@ -1,9 +1,9 @@
 import * as iam from "aws-cdk-lib/aws-iam"
 import { Construct } from "constructs"
 
-export const create = ({ scope, namespace }: { scope: Construct; namespace: string }) => ({
+export const create = ({ scope, namespace, serviceName, region }: { scope: Construct; namespace: string; serviceName: string; region?: string }) => ({
   role: new iam.Role(scope, "role", {
-    roleName: `${namespace}-role`,
+    roleName: `${namespace}-${serviceName}-${region}-role`,
     assumedBy: new iam.CompositePrincipal(
       new iam.ServicePrincipal("scheduler.amazonaws.com"),
       new iam.ServicePrincipal("pipes.amazonaws.com"),
