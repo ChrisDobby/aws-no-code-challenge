@@ -32,8 +32,16 @@ const definition = (tableName: string, busName: string, serviceName: string) => 
             Type: "Choice",
             Choices: [
               {
-                Variable: "$.existing.Item.currentState.S",
-                StringMatches: "created",
+                And: [
+                  {
+                    Variable: "$.existing.Item",
+                    IsPresent: true,
+                  },
+                  {
+                    Variable: "$.existing.Item.currentState.S",
+                    StringMatches: "created",
+                  },
+                ],
                 Next: "Started",
               },
             ],

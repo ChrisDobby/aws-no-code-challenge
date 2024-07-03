@@ -124,21 +124,6 @@ export const create = ({
         sqsQueueParameters: {
           batchSize: 1,
         },
-        filterCriteria: {
-          filters: [
-            {
-              pattern: JSON.stringify({
-                body: {
-                  features: [
-                    {
-                      prefix: "feature-1",
-                    },
-                  ],
-                },
-              }),
-            },
-          ],
-        },
       },
       targetParameters: {
         inputTemplate: '{"accountId": <$.body.accountId>}',

@@ -21,19 +21,8 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
       return
     }
 
-    const serviceParameter = new cdk.CfnParameter(this, "service", {
-      description: "The name of the service",
-      type: "String",
-    })
-
-    const baseParameter = new cdk.CfnParameter(this, "base", {
-      description: "Just deploying the base resources",
-      type: "String",
-      allowedValues: ["true", "false"],
-    })
-
-    const serviceName = serviceParameter.valueAsString
-    const isBase = baseParameter.valueAsString === "true"
+    const isBase = this.node.tryGetContext("base") === "true"
+    const serviceName = this.node.tryGetContext("service") || "test"
     const { env } = props
 
     const eligibilityTableName = `${namespace}-${serviceName}Eligibility`

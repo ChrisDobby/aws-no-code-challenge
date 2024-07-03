@@ -18,7 +18,14 @@ export const create = ({
 }) => {
   const publishedTopic = new sns.Topic(scope, "published-topic", { topicName: `${namespace}-${serviceName}-published` })
   if (!isBase) {
-    publishedTopic.addSubscription(new snsSubscriptions.SqsSubscription(publishedQueue, { rawMessageDelivery: true }))
+    publishedTopic.addSubscription(
+      new snsSubscriptions.SqsSubscription(publishedQueue, {
+        rawMessageDelivery: true,
+        filterPolicyWithMessageBody: {
+          features: sns.FilterOrPolicy.filter(sns.SubscriptionFilter.stringFilter({ allowlist: ["feature-1"] })),
+        },
+      }),
+    )
   }
 
   return { publishedTopic }
