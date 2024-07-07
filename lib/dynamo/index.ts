@@ -1,3 +1,4 @@
+import { RemovalPolicy } from "aws-cdk-lib"
 import * as dynamo from "aws-cdk-lib/aws-dynamodb"
 import { Construct } from "constructs"
 
@@ -6,10 +7,12 @@ export const create = ({ scope, eligibilityTableName, tableName }: { scope: Cons
     tableName: eligibilityTableName,
     partitionKey: { name: "accountId", type: dynamo.AttributeType.STRING },
     billingMode: dynamo.BillingMode.PAY_PER_REQUEST,
+    removalPolicy: RemovalPolicy.DESTROY,
   }),
   mainTable: new dynamo.Table(scope, "main-table", {
     tableName,
     partitionKey: { name: "accountId", type: dynamo.AttributeType.STRING },
     billingMode: dynamo.BillingMode.PAY_PER_REQUEST,
+    removalPolicy: RemovalPolicy.DESTROY,
   }),
 })
