@@ -34,47 +34,45 @@ export const create = ({
   restApi.root.addMethod("GET", new apiGateway.MockIntegration({}))
 
   if (!isBase) {
-    restApi.root
-      .addResource("eligibility")
-      .addResource("{accountId}")
-      .addMethod(
-        "GET",
-        new apiGateway.AwsIntegration({
-          service: "dynamodb",
-          action: "GetItem",
-          integrationHttpMethod: "POST",
-          options: {
-            passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
-            credentialsRole: role,
-            requestTemplates: {
-              "application/json": JSON.stringify({
-                TableName: eligibilityTableName,
-                Key: {
-                  accountId: { S: "$input.params('accountId')" },
-                },
-              }),
-            },
-            integrationResponses: [
-              {
-                statusCode: "200",
-                responseTemplates: {
-                  "application/json": `
-                  #set($inputRoot = $input.path('$'))
-                  #if($inputRoot.Item.accountId.S != '') #set($isEligible = true) #else #set($isEligible = false) #end
-                  {
-                      "isEligible": $isEligible
-                  }`,
-                },
+    const accountResource = restApi.root.addResource(serviceName).addResource("{accountId}")
+    accountResource.addResource("eligibility").addMethod(
+      "GET",
+      new apiGateway.AwsIntegration({
+        service: "dynamodb",
+        action: "GetItem",
+        integrationHttpMethod: "POST",
+        options: {
+          passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
+          credentialsRole: role,
+          requestTemplates: {
+            "application/json": JSON.stringify({
+              TableName: eligibilityTableName,
+              Key: {
+                accountId: { S: "$input.params('accountId')" },
               },
-            ],
+            }),
           },
-        }),
-        {
-          apiKeyRequired: true,
-          methodResponses: [{ statusCode: "200" }],
+          integrationResponses: [
+            {
+              statusCode: "200",
+              responseTemplates: {
+                "application/json": `
+                #set($inputRoot = $input.path('$'))
+                #if($inputRoot.Item.accountId.S != '') #set($isEligible = true) #else #set($isEligible = false) #end
+                {
+                    "isEligible": $isEligible
+                }`,
+              },
+            },
+          ],
         },
-      )
-    const accountResource = restApi.root.addResource("ncc").addResource("{accountId}")
+      }),
+      {
+        apiKeyRequired: true,
+        methodResponses: [{ statusCode: "200" }],
+      },
+    )
+
     accountResource.addMethod(
       "GET",
       new apiGateway.AwsIntegration({
