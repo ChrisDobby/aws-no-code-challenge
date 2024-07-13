@@ -34,8 +34,8 @@ export const create = ({
   restApi.root.addMethod("GET", new apiGateway.MockIntegration({}))
 
   if (!isBase) {
-    const accountResource = restApi.root.addResource(serviceName).addResource("{accountId}")
-    accountResource.addResource("eligibility").addMethod(
+    const serviceResource = restApi.root.addResource("accounts").addResource("{accountId}").addResource(serviceName)
+    serviceResource.addResource("eligibility").addMethod(
       "GET",
       new apiGateway.AwsIntegration({
         service: "dynamodb",
@@ -73,7 +73,7 @@ export const create = ({
       },
     )
 
-    accountResource.addMethod(
+    serviceResource.addMethod(
       "GET",
       new apiGateway.AwsIntegration({
         service: "dynamodb",
@@ -121,7 +121,7 @@ export const create = ({
       },
     )
 
-    accountResource.addMethod(
+    serviceResource.addMethod(
       "POST",
       new apiGateway.AwsIntegration({
         service: "dynamodb",
