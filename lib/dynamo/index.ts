@@ -1,5 +1,7 @@
 import { RemovalPolicy } from "aws-cdk-lib"
 import * as dynamo from "aws-cdk-lib/aws-dynamodb"
+import { IRole } from "aws-cdk-lib/aws-iam"
+import { AwsCustomResource, AwsCustomResourcePolicy } from "aws-cdk-lib/custom-resources"
 import { Construct } from "constructs"
 
 export const create = ({ scope, eligibilityTableName, tableName }: { scope: Construct; eligibilityTableName: string; tableName: string }) => ({
@@ -16,3 +18,34 @@ export const create = ({ scope, eligibilityTableName, tableName }: { scope: Cons
     removalPolicy: RemovalPolicy.DESTROY,
   }),
 })
+
+export const initialise = ({ scope, eligibilityTable }: { scope: Construct; eligibilityTable: dynamo.ITable }) => {
+  new AwsCustomResource(scope, "initialise-dara", {
+    onCreate: {
+      service: "DynamoDB",
+      action: "batchWriteItem",
+      parameters: {
+        RequestItems: {
+          [eligibilityTable.tableName]: [
+            {
+              PutRequest: {
+                Item: {
+                  accountId: { S: "test" },
+                },
+              },
+            },
+            {
+              PutRequest: {
+                Item: {
+                  accountId: { S: "demo" },
+                },
+              },
+            },
+          ],
+        },
+      },
+      physicalResourceId: { id: "initialise-dara" },
+    },
+    policy: AwsCustomResourcePolicy.fromSdkCalls({ resources: [eligibilityTable.tableArn] }),
+  })
+}

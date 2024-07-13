@@ -33,7 +33,8 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const { role } = iam.create({ scope: this, namespace, serviceName, region: env?.region })
     const { publishedQueue, emailQueue } = sqs.create({ scope: this, namespace, serviceName })
     sns.create({ scope: this, namespace, serviceName, publishedQueue, isBase })
-    dynamo.create({ scope: this, eligibilityTableName, tableName })
+    const { eligibilityTable } = dynamo.create({ scope: this, eligibilityTableName, tableName })
+    dynamo.initialise({ scope: this, eligibilityTable })
     const { restApi } = apiGateway.create({ scope: this, namespace, serviceName, role, eligibilityTableName, tableName, isBase })
     const { apiConnection } = apiKeys.create({ scope: this, namespace, serviceName, apis: [demoApi, restApi] })
     if (isBase) {
