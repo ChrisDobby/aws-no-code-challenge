@@ -1,6 +1,5 @@
 import { RemovalPolicy } from "aws-cdk-lib"
 import * as dynamo from "aws-cdk-lib/aws-dynamodb"
-import { IRole } from "aws-cdk-lib/aws-iam"
 import { AwsCustomResource, AwsCustomResourcePolicy } from "aws-cdk-lib/custom-resources"
 import { Construct } from "constructs"
 

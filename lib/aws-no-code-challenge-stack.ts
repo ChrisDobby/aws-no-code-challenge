@@ -10,6 +10,7 @@ import * as demoApiGateway from "./demoApi"
 import * as apiGateway from "./apiGateway"
 import * as stepFunctions from "./stepFunctions"
 import * as apiKeys from "./apiKeys"
+import * as s3 from "./s3"
 
 const namespace = "ncc"
 
@@ -67,6 +68,11 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
         apiConnection,
         demoApi,
       })
+    }
+
+    if (this.node.tryGetContext("urlBucket") === "true") {
+      const { bucket } = s3.create({ scope: this, namespace, serviceName, region: env?.region })
+      s3.initialise({ scope: this, bucket, apiUrl: restApi.url })
     }
 
     new cdk.CfnOutput(this, "DemoApiUrl", { value: demoApi.url })
