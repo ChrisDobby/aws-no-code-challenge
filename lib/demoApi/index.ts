@@ -1,16 +1,20 @@
 import * as apiGateway from "aws-cdk-lib/aws-apigateway"
-import { IRole } from "aws-cdk-lib/aws-iam"
 import { Construct } from "constructs"
 import * as sns from "aws-cdk-lib/aws-sns"
 import * as iam from "aws-cdk-lib/aws-iam"
+import * as snsSubscriptions from "aws-cdk-lib/aws-sns-subscriptions"
 
-export const create = ({ scope, namespace, serviceName, region }: { scope: Construct; namespace: string; serviceName: string; region?: string }) => {
+export const create = ({ scope, namespace, serviceName, region, email }: { scope: Construct; namespace: string; serviceName: string; region?: string; email?: string }) => {
   const role = new iam.Role(scope, "demo-role", {
     roleName: `${namespace}-${serviceName}-${region}-demo-role`,
     assumedBy: new iam.CompositePrincipal(new iam.ServicePrincipal("apigateway.amazonaws.com")),
     managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSNSFullAccess")],
   })
   const demoEmailTopic = new sns.Topic(scope, "demo-email-topic", { topicName: `${namespace}-${serviceName}-demo-email` })
+  if (email) {
+    demoEmailTopic.addSubscription(new snsSubscriptions.EmailSubscription(email))
+  }
+
   const demoApi = new apiGateway.RestApi(scope, "demo-api", { restApiName: `${namespace}-${serviceName}-demo-api` })
   demoApi.root.addResource("email").addMethod(
     "POST",

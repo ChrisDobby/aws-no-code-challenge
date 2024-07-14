@@ -23,13 +23,14 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
 
     const isBase = this.node.tryGetContext("base") === "true"
     const serviceName = this.node.tryGetContext("service") || "test"
+    const demoEmail = this.node.tryGetContext("demoEmail")
     const { env } = props
 
     const eligibilityTableName = `${namespace}-${serviceName}Eligibility`
     const tableName = `${namespace}-${serviceName}`
     const busName = `${namespace}-${serviceName}`
 
-    const { demoApi } = demoApiGateway.create({ scope: this, namespace, serviceName, region: env?.region })
+    const { demoApi } = demoApiGateway.create({ scope: this, namespace, serviceName, region: env?.region, email: demoEmail })
     const { role } = iam.create({ scope: this, namespace, serviceName, region: env?.region })
     const { publishedQueue, emailQueue } = sqs.create({ scope: this, namespace, serviceName })
     sns.create({ scope: this, namespace, serviceName, publishedQueue, isBase })
@@ -67,5 +68,8 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
         demoApi,
       })
     }
+
+    new cdk.CfnOutput(this, "DemoApiUrl", { value: demoApi.url })
+    new cdk.CfnOutput(this, "ApiUrl", { value: restApi.url })
   }
 }
