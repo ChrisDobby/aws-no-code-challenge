@@ -11,6 +11,7 @@ import * as apiGateway from "./apiGateway"
 import * as stepFunctions from "./stepFunctions"
 import * as apiKeys from "./apiKeys"
 import * as s3 from "./s3"
+import * as scheduler from "./scheduler"
 
 const namespace = "ncc"
 
@@ -69,6 +70,8 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
         demoApi,
       })
     }
+
+    scheduler.create({ scope: this, namespace, serviceName })
 
     if (this.node.tryGetContext("urlBucket") === "true") {
       const { bucket } = s3.create({ scope: this, namespace, serviceName, region: env?.region })
