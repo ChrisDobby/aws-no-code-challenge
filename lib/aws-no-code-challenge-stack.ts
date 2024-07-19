@@ -12,6 +12,7 @@ import * as stepFunctions from "./stepFunctions"
 import * as apiKeys from "./apiKeys"
 import * as s3 from "./s3"
 import * as scheduler from "./scheduler"
+import * as deleteBase from "./deleteBase"
 
 const namespace = "ncc"
 
@@ -33,7 +34,7 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const busName = `${namespace}-${serviceName}`
 
     const { demoApi } = demoApiGateway.create({ scope: this, namespace, serviceName, region: env?.region, email: demoEmail })
-    const { role } = iam.create({ scope: this, namespace, serviceName, region: env?.region })
+    const { role, deleteBaseRole } = iam.create({ scope: this, namespace, serviceName, region: env?.region })
     const { publishedQueue, emailQueue } = sqs.create({ scope: this, namespace, serviceName })
     sns.create({ scope: this, namespace, serviceName, publishedQueue, isBase })
     const { eligibilityTable } = dynamo.create({ scope: this, eligibilityTableName, tableName })
@@ -42,7 +43,10 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const { apiConnection } = apiKeys.create({ scope: this, namespace, serviceName, apis: [demoApi, restApi] })
     if (isBase) {
       stepFunctions.createBase({ scope: this, namespace, serviceName, role })
-      eventBridge.createBase({ scope: this, namespace, serviceName, busName, apiConnection, demoApi })
+      const { bus } = eventBridge.createBase({ scope: this, namespace, serviceName, busName, apiConnection, demoApi })
+      const { deleteBaseResource } = deleteBase.create({ scope: this, namespace, serviceName, role: deleteBaseRole })
+      deleteBaseResource.node.addDependency(restApi)
+      deleteBaseResource.node.addDependency(bus)
     } else {
       const { emailEnricherStateMachine, emailSchedulerStateMachine, workflowStateMachine } = stepFunctions.create({
         scope: this,

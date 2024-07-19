@@ -71,4 +71,39 @@ export const create = ({ scope, namespace, serviceName, region }: { scope: Const
       }),
     },
   }),
+  deleteBaseRole: new iam.Role(scope, "deleteBaseRole", {
+    roleName: `${namespace}-${serviceName}-deletebase-${region}-role`,
+    assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+    inlinePolicies: {
+      [`${namespace}-deletebase-policy`]: new iam.PolicyDocument({
+        statements: [
+          new iam.PolicyStatement({
+            actions: [
+              "pipes:ListPipes",
+              "pipes:DeletePipe",
+              "logs:DeleteLogDelivery",
+              "events:ListRules",
+              "events:DeleteRule",
+              "events:RemoveTargets",
+              "events:ListTargetsByRule",
+              "states:ListStateMachines",
+              "states:DeleteStateMachine",
+              "logs:DescribeLogGroups",
+              "logs:DeleteLogGroup",
+              "apigateway:GET",
+              "apigateway:DELETE",
+              "SNS:ListSubscriptions",
+              "SNS:Unsubscribe",
+              "scheduler:ListSchedules",
+              "scheduler:DeleteSchedule",
+              "logs:CreateLogGroup",
+              "logs:CreateLogStream",
+              "logs:PutLogEvents",
+            ],
+            resources: ["*"],
+          }),
+        ],
+      }),
+    },
+  }),
 })
