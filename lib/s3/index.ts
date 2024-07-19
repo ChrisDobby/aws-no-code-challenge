@@ -11,7 +11,7 @@ export const create = ({ scope, namespace, serviceName, region }: { scope: Const
   }),
 })
 
-export const initialise = ({ scope, bucket, apiUrl }: { scope: Construct; bucket: s3.IBucket; apiUrl: string }) => {
+export const initialise = ({ scope, bucket, apiUrl, apiKey }: { scope: Construct; bucket: s3.IBucket; apiUrl: string; apiKey: string }) => {
   new AwsCustomResource(scope, "initialise-s3", {
     onCreate: {
       service: "S3",
@@ -19,7 +19,7 @@ export const initialise = ({ scope, bucket, apiUrl }: { scope: Construct; bucket
       parameters: {
         Bucket: bucket.bucketName,
         Key: "apiUrl.json",
-        Body: JSON.stringify({ apiUrl }),
+        Body: JSON.stringify({ apiUrl, apiKey }),
       },
       physicalResourceId: { id: "initialise-s3" },
     },

@@ -40,7 +40,7 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const { eligibilityTable } = dynamo.create({ scope: this, eligibilityTableName, tableName })
     dynamo.initialise({ scope: this, eligibilityTable })
     const { restApi } = apiGateway.create({ scope: this, namespace, serviceName, role, eligibilityTableName, tableName, isBase })
-    const { apiConnection } = apiKeys.create({ scope: this, namespace, serviceName, apis: [demoApi, restApi] })
+    const { apiConnection, key } = apiKeys.create({ scope: this, namespace, serviceName, apis: [demoApi, restApi] })
     if (isBase) {
       stepFunctions.createBase({ scope: this, namespace, serviceName, role })
       const { bus } = eventBridge.createBase({ scope: this, namespace, serviceName, busName, apiConnection, demoApi })
@@ -79,7 +79,7 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
 
     if (this.node.tryGetContext("urlBucket") === "true") {
       const { bucket } = s3.create({ scope: this, namespace, serviceName, region: env?.region })
-      s3.initialise({ scope: this, bucket, apiUrl: restApi.url })
+      s3.initialise({ scope: this, bucket, apiUrl: restApi.url, apiKey: key })
     }
 
     new cdk.CfnOutput(this, "DemoApiUrl", { value: demoApi.url })

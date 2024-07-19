@@ -2,10 +2,10 @@ import { Construct } from "constructs"
 import * as events from "aws-cdk-lib/aws-events"
 import * as apiGateway from "aws-cdk-lib/aws-apigateway"
 import { SecretValue } from "aws-cdk-lib"
-
-const key = "12345678901234567890"
+import { randomBytes } from "crypto"
 
 export const create = ({ scope, namespace, serviceName, apis }: { scope: Construct; namespace: string; serviceName: string; apis: apiGateway.IRestApi[] }) => {
+  const key = randomBytes(12).toString("hex")
   const apiKey = new apiGateway.ApiKey(scope, "api-key", {
     apiKeyName: `${namespace}-${serviceName}-api-key`,
     value: key,
@@ -21,5 +21,6 @@ export const create = ({ scope, namespace, serviceName, apis }: { scope: Constru
       connectionName: `${namespace}-${serviceName}-api-key`,
       authorization: events.Authorization.apiKey("x-api-key", SecretValue.unsafePlainText(key)),
     }),
+    key,
   }
 }
