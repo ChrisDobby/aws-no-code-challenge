@@ -119,6 +119,7 @@ export class AwsNoCodeChallengeStack extends cdk.Stack {
     const { deleteBaseResource } = deleteBase.create({ scope: this, namespace, serviceName, role: deleteBaseRole })
     deleteBaseResource.node.addDependency(restApi)
     deleteBaseResource.node.addDependency(bus)
+    deleteBaseResource.node.addDependency(deleteBaseResource)
 
     scheduler.create({ scope: this, namespace, serviceName })
 
