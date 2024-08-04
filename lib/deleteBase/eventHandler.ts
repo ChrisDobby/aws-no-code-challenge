@@ -22,7 +22,7 @@ const deleteRules = async (namespace: string, serviceName: string) => {
     await Promise.all(
       Rules.map(async ({ Name }) => {
         const { Targets } = await client.send(new ListTargetsByRuleCommand({ Rule: Name, EventBusName: `${namespace}-${serviceName}` }))
-        if (Targets) {
+        if (Targets?.length) {
           await client.send(new RemoveTargetsCommand({ Rule: Name, EventBusName: `${namespace}-${serviceName}`, Ids: Targets.map(({ Id }) => Id).filter(Boolean) as string[] }))
         }
         await client.send(new DeleteRuleCommand({ Name, EventBusName: `${namespace}-${serviceName}` }))

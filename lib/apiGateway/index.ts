@@ -2,6 +2,8 @@ import * as apiGateway from "aws-cdk-lib/aws-apigateway"
 import { IRole } from "aws-cdk-lib/aws-iam"
 import { Construct } from "constructs"
 
+export type ApiEndpoints = "get-eligibility" | "get-items" | "post-items"
+
 export const create = ({
   scope,
   namespace,
@@ -9,7 +11,7 @@ export const create = ({
   role,
   eligibilityTableName,
   tableName,
-  isBase,
+  endpoints = ["get-eligibility", "get-items", "post-items"],
 }: {
   scope: Construct
   namespace: string
@@ -17,7 +19,7 @@ export const create = ({
   role: IRole
   eligibilityTableName: string
   tableName: string
-  isBase?: boolean
+  endpoints?: ApiEndpoints[]
 }) => {
   const restApi = new apiGateway.RestApi(scope, "rest-api", { restApiName: `${namespace}-${serviceName}-api` })
   const requestModel = restApi.addModel("post-request", {
@@ -33,8 +35,12 @@ export const create = ({
 
   restApi.root.addMethod("GET", new apiGateway.MockIntegration({}))
 
-  if (!isBase) {
-    const serviceResource = restApi.root.addResource("accounts").addResource("{accountId}").addResource(serviceName)
+  if (endpoints.length === 0) {
+    return { restApi }
+  }
+
+  const serviceResource = restApi.root.addResource("accounts").addResource("{accountId}").addResource(serviceName)
+  if (endpoints.includes("get-eligibility")) {
     serviceResource.addResource("eligibility").addMethod(
       "GET",
       new apiGateway.AwsIntegration({
@@ -45,12 +51,13 @@ export const create = ({
           passthroughBehavior: apiGateway.PassthroughBehavior.NEVER,
           credentialsRole: role,
           requestTemplates: {
-            "application/json": JSON.stringify({
-              TableName: eligibilityTableName,
-              Key: {
-                accountId: { S: "$input.params('accountId')" },
-              },
-            }),
+            "application/json": `
+            {
+              "TableName": "${eligibilityTableName}",
+              "Key": {
+                "accountId": { "S": "$input.params('accountId')" }
+              }
+            }`,
           },
           integrationResponses: [
             {
@@ -72,7 +79,9 @@ export const create = ({
         methodResponses: [{ statusCode: "200" }],
       },
     )
+  }
 
+  if (endpoints.includes("get-items")) {
     serviceResource.addMethod(
       "GET",
       new apiGateway.AwsIntegration({
@@ -120,7 +129,9 @@ export const create = ({
         methodResponses: [{ statusCode: "200" }],
       },
     )
+  }
 
+  if (endpoints.includes("post-items")) {
     serviceResource.addMethod(
       "POST",
       new apiGateway.AwsIntegration({

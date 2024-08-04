@@ -7,8 +7,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "deploy:full": "cdk --app 'npx ts-node --prefer-ts-exts bin/aws-no-code-challenge.ts' deploy",
-    "deploy:base": "cdk --app 'npx ts-node --prefer-ts-exts bin/aws-no-code-challenge.ts' deploy --context base=true"
+    "deploy": "cdk --app 'npx ts-node --prefer-ts-exts bin/aws-no-code-challenge.ts' deploy"
   },
   "devDependencies": {
     "@aws-sdk/client-api-gateway": "^3.616.0",
