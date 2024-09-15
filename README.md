@@ -1,4 +1,4 @@
-# aws-no-code-challenge
+# AWS No Code Challenge
 
 AWS CDK project to build infrastructure demonstrated in my **AWS No Code Challenge** talk.
 

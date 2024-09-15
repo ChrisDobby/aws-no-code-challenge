@@ -40,7 +40,7 @@ const getOptions = (
     case "comsum":
       return {
         includeSubscription: false,
-        apiEndpoints: ["get-eligibility", "get-items", "post-items"],
+        apiEndpoints: ["get-eligibility", "get-items"],
         stepFunctions: ["addDays", "emailEnricher"],
         eventBridgeRules: ["completed"],
         customDeleteRequired: true,
