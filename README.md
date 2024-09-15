@@ -18,4 +18,4 @@ The deploy command accepts a number of context options:
 
 `npm run deploy --context type=base --context service=trials --context demoEmail=test@email.com --context urlBucket=true` will create a base deployment with a service name of `trials`, notifications sent to `test@email.com` and stores the api key in a bucket.
 
-[Architecture](./architecture.png)
+![Architecture](./architecture.png)
