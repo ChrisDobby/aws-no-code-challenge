@@ -38,15 +38,14 @@ const definition = (role: IRole, addDaysStateMachine: sfn.IStateMachine, emailQu
         FlexibleTimeWindow: {
           Mode: "OFF",
         },
-        ActionAfterCompletion: "DELETE",
-        "Name.$": "States.Format('{}{}{}', $.schedule.accountId, $.schedule.template, $.schedule.days)",
+        "Name.$": "States.Format('{}{}{}', $.schedule.accountId, $.schedule.emailType, $.schedule.days)",
         "ScheduleExpression.$": "States.Format('at({})', $.schedule.create.at.dateTime)",
         Target: {
           Arn: emailQueue.queueArn,
           RoleArn: role.roleArn,
           Input: {
             "accountId.$": "$.schedule.accountId",
-            "template.$": "$.schedule.template",
+            "emailType.$": "$.schedule.emailType",
           },
         },
       },

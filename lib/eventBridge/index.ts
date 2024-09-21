@@ -59,7 +59,7 @@ export const create = ({
       new targets.SqsQueue(emailQueue, {
         message: eventBridge.RuleTargetInput.fromObject({
           accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
-          template: "started",
+          emailType: "started",
         }),
       }),
     )
@@ -67,7 +67,7 @@ export const create = ({
       new targets.SfnStateMachine(emailSchedulerStateMachine as IStateMachine, {
         input: eventBridge.RuleTargetInput.fromObject({
           accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
-          template: "update",
+          emailType: "update",
           days: 4,
         }),
       }),
@@ -76,7 +76,7 @@ export const create = ({
       new targets.SfnStateMachine(emailSchedulerStateMachine as IStateMachine, {
         input: eventBridge.RuleTargetInput.fromObject({
           accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
-          template: "update",
+          emailType: "update",
           days: 8,
         }),
       }),
@@ -85,7 +85,7 @@ export const create = ({
       new targets.SfnStateMachine(emailSchedulerStateMachine as IStateMachine, {
         input: eventBridge.RuleTargetInput.fromObject({
           accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
-          template: "ending",
+          emailType: "ending",
           days: 10,
         }),
       }),
@@ -104,7 +104,7 @@ export const create = ({
           new targets.SqsQueue(emailQueue, {
             message: eventBridge.RuleTargetInput.fromObject({
               accountId: eventBridge.EventField.fromPath("$.detail.accountId"),
-              template: "completed",
+              emailType: "completed",
             }),
           }),
         )
@@ -147,7 +147,7 @@ export const create = ({
           target: emailSendApiDestination.apiDestinationArn,
           enrichment: emailEnricherStateMachine?.stateMachineArn || "",
           enrichmentParameters: {
-            inputTemplate: '{"accountId": "<$.body.accountId>","template": "<$.body.template>"}',
+            inputTemplate: '{"accountId": "<$.body.accountId>","emailType": "<$.body.emailType>"}',
           },
         })
       : undefined,

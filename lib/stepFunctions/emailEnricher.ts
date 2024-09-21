@@ -81,7 +81,7 @@ const definition = (tableName: string, demoApi: IRestApi, apiConnection: IConnec
             End: true,
             Parameters: {
               "accountId.$": "$[0].accountId",
-              "template.$": "$[0].template",
+              "emailType.$": "$[0].emailType",
               [`${serviceName}.$`]: `$[0].${serviceName}`,
               "user.$": "$[1].user",
             },
