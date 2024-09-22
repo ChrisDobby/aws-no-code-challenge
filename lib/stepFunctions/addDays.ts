@@ -21,7 +21,70 @@ const definition = {
         "time.$": "$.dateTimeParts[1]",
         "daysToAdd.$": "$.daysToAdd",
       },
+      Next: "Remove leading zeroes(1)",
+    },
+    "Remove leading zeroes(1)": {
+      Type: "Pass",
+      Next: "Remove leading zeroes(2)",
+      Parameters: {
+        "dateParts.$": "$.dateParts",
+        "time.$": "$.time",
+        "daysToAdd.$": "$.daysToAdd",
+        "testDay.$": "States.StringSplit(States.Format('99{}', $.dateParts[2]), '0')",
+        "indicator.$": "States.ArrayGetItem(States.StringSplit(States.Format('99{}', $.dateParts[2]), '0'), 0)",
+      },
+    },
+    "Remove leading zeroes(2)": {
+      Type: "Choice",
+      Choices: [
+        {
+          Variable: "$.indicator",
+          StringEquals: "99",
+          Next: "Has leading zero",
+        },
+      ],
+      Default: "No leading zero",
+    },
+    "No leading zero": {
+      Type: "Pass",
+      Next: "Needs trailing zero",
+      Parameters: {
+        "dateParts.$": "$.dateParts",
+        "time.$": "$.time",
+        "daysToAdd.$": "$.daysToAdd",
+        "day.$": "States.StringToJson(States.ArrayGetItem(States.StringSplit(States.ArrayGetItem($.testDay, 0), '99'), 0))",
+      },
+    },
+    "Needs trailing zero": {
+      Type: "Choice",
+      Choices: [
+        {
+          Variable: "$.day",
+          NumericGreaterThanEquals: 10,
+          Next: "Create date",
+        },
+      ],
+      Default: "Add trailing zero",
+    },
+    "Add trailing zero": {
+      Type: "Pass",
       Next: "Create date",
+      Parameters: {
+        "dateParts.$": "$.dateParts",
+        "time.$": "$.time",
+        "daysToAdd.$": "$.daysToAdd",
+        "day.$": "States.StringToJson(States.Format('{}0', $.day))",
+      },
+    },
+    "Has leading zero": {
+      Type: "Pass",
+      Next: "Create date",
+      Parameters: {
+        "dateParts.$": "$.dateParts",
+        "time.$": "$.time",
+        "daysToAdd.$": "$.daysToAdd",
+        "day.$": "States.StringToJson(States.ArrayGetItem($.testDay, 1))",
+      },
     },
     "Create date": {
       Type: "Pass",
@@ -29,7 +92,7 @@ const definition = {
         "time.$": "$.time",
         "year.$": "States.StringToJson($.dateParts[0])",
         "month.$": "States.StringToJson(States.ArrayGetItem(States.StringSplit($.dateParts[1], '0'), 0))",
-        "day.$": "States.StringToJson(States.ArrayGetItem(States.StringSplit($.dateParts[2], '0'), 0))",
+        "day.$": "$.day",
         "daysToAdd.$": "$.daysToAdd",
       },
       Next: "Have all days been added",
